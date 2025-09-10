@@ -1,0 +1,38 @@
+name: 'Parse Deploy Config'
+description: 'Parse and return active deployment configuration for a given environment and region'
+inputs:
+  config:
+    description: 'Path to config JSON'
+    required: true
+  env:
+    description: 'Environment (e.g. dev, prod)'
+    required: true
+  region:
+    description: 'Region (us-east-1, us-west-2, etc.)'
+    required: true
+  ephemeral-branch-prefix:
+    description: 'Prefix for branches associated with ephemeral environments (default: ephemeral/ - set to empty string to disable)'
+    required: false
+    default: 'ephemeral/'
+  disable-ephemeral-branch-check:
+    description: 'Disable requirement that current branch name matches ephemeral-branch-prefix for ephemeral environments (default false)'
+    required: false
+    default: 'false'
+  delimiter:
+    description: 'Delimiter for flattening (default .)'
+    required: false
+    default: '.'
+  display-outputs:
+    description: 'Display the merged output for the specified environment/region to the console (default false)'
+    required: false
+    default: 'true'
+  component:
+    description: 'Specific component that should be returned from the config (default: all components)'
+    required: false
+  github-token:
+    description: 'GitHub token to use for authentication with private repositories'
+    required: false
+
+runs:
+  using: 'node20'
+  main: 'action/dist/index.js'
