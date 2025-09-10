@@ -1,0 +1,37 @@
+{
+  "accountId": "123456789012",
+  "otherField": "some-value",
+  "name": "Development (us-west-2)",
+  "tags": {
+    "Project": "project-name",
+    "ManagedBy": "terraform"
+  },
+  "tfState": {
+    "bucketName": "tf-state-bucket",
+    "region": "us-west-2"
+  },
+  "network": {
+    "vpc_cidr": "10.1.0.0/21",
+    "availability_zones": [
+      "us-west-2a",
+      "us-west-2b",
+      "us-west-2c"
+    ],
+    "public_subnet_cidrs": [
+      "10.1.0.0/24",
+      "10.1.1.0/24",
+      "10.1.2.0/24"
+    ],
+    "private_subnet_cidrs": [
+      "10.1.4.0/24",
+      "10.1.5.0/24",
+      "10.1.6.0/24"
+    ],
+    "nat_instance_type": "t4g.nano"
+  },
+  "env_name": "dev",
+  "env_config_name": "dev",
+  "region": "us-west-2",
+  "region_short": "usw2",
+  "is_ephemeral": false
+}
