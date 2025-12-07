@@ -15,6 +15,10 @@ optional per‑region overrides. The tooling merges and validates the requested 
 * Component hoisting (request only one component at root)
 * Required field validation (no unresolved `null` values)
 
+This makes it easy to manage complex deployment configurations in a single source of truth, and trivial to request the
+"current" or "active" configuration for any environment/region combination in a way that's compatible across multiple
+tools and platforms.
+
 ---
 ## Example Configuration (with required fields)
 
