@@ -2,6 +2,9 @@
   "name": "unified-deploy-config",
   "version": "1.0.0",
   "main": "index.js",
+  "bin": {
+    "unified-deploy-config": "./merge-config.js"
+  },
   "license": "MIT",
   "scripts": {
     "test": "jest",

@@ -233,29 +233,74 @@ If you fork and modify source, regenerate the bundle with `pnpm run build:packag
 
 ### Local CLI
 
-Merged JSON:
+#### Installation
+
+Install from npm registry (when published):
 ```sh
-node merge-config.js --config ./test-cfg.json5 --env dev --region us-west-2 --output json
+npm install -g unified-deploy-config
 ```
 
-Flattened output (equivalent to what the 'unified-deploy-config' GitHub Action does):
+Or install from GitHub:
 ```sh
-node merge-config.js --config ./test-cfg.json5 --env dev --region us-west-2 --output flatten
+pnpm add -g github:omnidecimal/unified-deploy-config#main
 ```
 
-Show output for Terraform (equivalent to what the 'merge_config' module does):
+Or use via npx (no installation required):
 ```sh
-node merge-config.js --config ./test-cfg.json5 --env dev --region us-west-2 --output json --terraform
+npx unified-deploy-config --help
 ```
 
-Get only a specific component (e.g., tfState):
+#### Commands
+
+The CLI provides two main commands: `parse` (for merging configurations) and `convert` (for converting JSON5 to JSON).
+
+##### Parse Command
+
+Parse and merge configuration for environments and regions:
+
 ```sh
-node merge-config.js --config ./test-cfg.json5 --env dev --region us-west-2 --component tfState
+# Merged JSON (parse is the default command)
+unified-deploy-config parse --config ./test-cfg.json5 --env dev --region us-west-2
+unified-deploy-config --config ./test-cfg.json5 --env dev --region us-west-2  # same as above
+
+# Flattened output (equivalent to GitHub Action)
+unified-deploy-config parse --config ./test-cfg.json5 --env dev --region us-west-2 --output flatten
+
+# Terraform mode output
+unified-deploy-config parse --config ./test-cfg.json5 --env dev --region us-west-2 --terraform
+
+# Get specific component only
+unified-deploy-config parse --config ./test-cfg.json5 --env dev --region us-west-2 --component tfState
+
+# Get network configuration flattened
+unified-deploy-config parse --config ./test-cfg.json5 --env dev --region us-west-2 --component network --output flatten
 ```
 
-Get only network configuration flattened:
+##### Convert Command
+
+Convert JSON5 files to standard JSON:
+
 ```sh
-node merge-config.js --config ./test-cfg.json5 --env dev --region us-west-2 --component network --output flatten
+# Convert to stdout (pretty-printed)
+unified-deploy-config convert config.json5
+
+# Convert to file
+unified-deploy-config convert config.json5 output.json
+
+# Convert with minified output
+unified-deploy-config convert config.json5 --minify
+
+# Convert to file with minified output
+unified-deploy-config convert config.json5 output.json --minify
+```
+
+#### Direct Script Usage
+
+You can also run the script directly without installation:
+
+```sh
+node merge-config.js parse --config ./test-cfg.json5 --env dev --region us-west-2
+node merge-config.js convert config.json5 output.json
 ```
 
 
