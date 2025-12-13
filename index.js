@@ -1,2 +1,2 @@
 // Library entrypoint that exposes mergeConfig for consumers.
-module.exports = require('./merge-config');
+module.exports = require('./lib/merge-config');

@@ -29,7 +29,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node merge-config.js convert "${inputFile}"`, {
+    const result = execSync(`node cli.js convert "${inputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -49,7 +49,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    execSync(`node merge-config.js convert "${inputFile}" "${outputFile}"`, {
+    execSync(`node cli.js convert "${inputFile}" "${outputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -67,7 +67,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node merge-config.js convert "${inputFile}"`, {
+    const result = execSync(`node cli.js convert "${inputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -88,7 +88,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node merge-config.js convert "${inputFile}" --minify`, {
+    const result = execSync(`node cli.js convert "${inputFile}" --minify`, {
       encoding: 'utf8'
     });
 
@@ -114,7 +114,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node merge-config.js convert "${inputFile}"`, {
+    const result = execSync(`node cli.js convert "${inputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -136,7 +136,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node merge-config.js convert "${inputFile}"`, {
+    const result = execSync(`node cli.js convert "${inputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -156,7 +156,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node merge-config.js convert "${inputFile}"`, {
+    const result = execSync(`node cli.js convert "${inputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -176,7 +176,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node merge-config.js convert "${inputFile}"`, {
+    const result = execSync(`node cli.js convert "${inputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -204,7 +204,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node merge-config.js convert "${inputFile}"`, {
+    const result = execSync(`node cli.js convert "${inputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -215,7 +215,7 @@ describe('convert command', () => {
   });
 
   test('should convert existing test-cfg.json5 file', () => {
-    const result = execSync('node merge-config.js convert test-cfg.json5', {
+    const result = execSync('node cli.js convert test-cfg.json5', {
       encoding: 'utf8'
     });
 
@@ -230,7 +230,7 @@ describe('convert command', () => {
     const nonExistentFile = path.join(tempDir, 'does-not-exist.json5');
 
     expect(() => {
-      execSync(`node merge-config.js convert "${nonExistentFile}"`, {
+      execSync(`node cli.js convert "${nonExistentFile}"`, {
         encoding: 'utf8',
         stdio: 'pipe'
       });
@@ -246,7 +246,7 @@ describe('convert command', () => {
     fs.writeFileSync(inputFile, invalidContent, 'utf8');
 
     expect(() => {
-      execSync(`node merge-config.js convert "${inputFile}"`, {
+      execSync(`node cli.js convert "${inputFile}"`, {
         encoding: 'utf8',
         stdio: 'pipe'
       });
@@ -260,7 +260,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    execSync(`node merge-config.js convert "${inputFile}" "${outputFile}"`, {
+    execSync(`node cli.js convert "${inputFile}" "${outputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -284,7 +284,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    execSync(`node merge-config.js convert "${inputFile}" "${outputFile}" --minify`, {
+    execSync(`node cli.js convert "${inputFile}" "${outputFile}" --minify`, {
       encoding: 'utf8'
     });
 
@@ -309,7 +309,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node merge-config.js convert "${inputFile}"`, {
+    const result = execSync(`node cli.js convert "${inputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -332,7 +332,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node merge-config.js convert "${inputFile}"`, {
+    const result = execSync(`node cli.js convert "${inputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -346,7 +346,7 @@ describe('convert command', () => {
   });
 
   test('should show help for convert command', () => {
-    const result = execSync('node merge-config.js convert --help', {
+    const result = execSync('node cli.js convert --help', {
       encoding: 'utf8'
     });
 
@@ -363,7 +363,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    execSync(`node merge-config.js convert "${inputFile}" "${outputFile}"`, {
+    execSync(`node cli.js convert "${inputFile}" "${outputFile}"`, {
       encoding: 'utf8'
     });
 

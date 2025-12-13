@@ -1,7 +1,7 @@
 // GitHub Action entrypoint. Packs into action/dist/index.js via build:gha script.
 const core = require('@actions/core');
 const { execSync } = require('child_process');
-const mergeConfig = require('../merge-config');
+const mergeConfig = require('../lib/merge-config');
 const { join } = require('path');
 const fs = require('fs');
 const JSON5 = require('json5');

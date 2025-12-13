@@ -1,4 +1,4 @@
-const mergeConfig = require('./merge-config');
+const mergeConfig = require('./lib/merge-config');
 const path = require('path');
 
 describe('mergeConfig function', () => {
@@ -279,7 +279,7 @@ describe('mergeConfig function', () => {
 
   test('should handle terraform mode via CLI', () => {
     const { execSync } = require('child_process');
-    const result = execSync('node merge-config.js --config ./test-cfg.json5 --env dev --region usw2 --output flatten --terraform',
+    const result = execSync('node cli.js --config ./test-cfg.json5 --env dev --region usw2 --output flatten --terraform',
       { encoding: 'utf8' });
 
     const parsed = JSON.parse(result.trim());
@@ -300,7 +300,7 @@ describe('mergeConfig function', () => {
 
   test('should handle normal CLI mode without terraform flag', () => {
     const { execSync } = require('child_process');
-    const result = execSync('node merge-config.js --config ./test-cfg.json5 --env dev --region usw2 --output flatten',
+    const result = execSync('node cli.js --config ./test-cfg.json5 --env dev --region usw2 --output flatten',
       { encoding: 'utf8' });
 
     const parsed = JSON.parse(result.trim());

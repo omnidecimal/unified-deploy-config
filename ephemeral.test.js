@@ -1,4 +1,4 @@
-const mergeConfig = require('./merge-config');
+const mergeConfig = require('./lib/merge-config');
 const path = require('path');
 
 describe('ephemeral environment functionality', () => {

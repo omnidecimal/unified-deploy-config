@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "bin": {
-    "unified-deploy-config": "./merge-config.js"
+    "udc": "./cli.js"
   },
   "license": "MIT",
   "scripts": {
@@ -12,8 +12,8 @@
     "test:coverage": "jest --coverage",
     "build": "pnpm run build:gha && pnpm run build:terraform",
     "build:gha": "ncc build action/index.js -m -o action/dist --no-source-map-register",
-    "build:terraform": "ncc build merge-config.js -o terraform/merge_config/dist -m --no-source-map-register",
-    "build:package": "ncc build merge-config.js -o dist -m --no-source-map-register"
+    "build:terraform": "ncc build lib/merge-config.js -o terraform/merge_config/dist -m --no-source-map-register",
+    "build:package": "ncc build lib/merge-config.js -o dist -m --no-source-map-register"
   },
   "packageManager": "pnpm@9.0.0",
   "dependencies": {

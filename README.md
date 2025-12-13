@@ -296,11 +296,27 @@ unified-deploy-config convert config.json5 output.json --minify
 
 #### Direct Script Usage
 
-You can also run the script directly without installation:
+You can also run the CLI script directly without installation:
 
 ```sh
-node merge-config.js parse --config ./test-cfg.json5 --env dev --region us-west-2
-node merge-config.js convert config.json5 output.json
+node cli.js parse --config ./test-cfg.json5 --env dev --region us-west-2
+node cli.js convert config.json5 output.json
+```
+
+#### Library Usage in Code
+
+The core `mergeConfig` function can be imported and used programmatically:
+
+```js
+const mergeConfig = require('unified-deploy-config');
+// or if running locally: const mergeConfig = require('./merge-config');
+
+const result = mergeConfig({
+  configFile: './config.json5',
+  env: 'dev',
+  region: 'us-west-2',
+  output: 'json'
+});
 ```
 
 
