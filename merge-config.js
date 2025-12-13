@@ -243,65 +243,45 @@ function flatten(obj, prefix = '', delimiter = '.') {
 
 
 if (require.main === module) {
-    // CLI: --config <path> --env <env> [--region <region>] [--output json|flatten] [--delimiter <char>] [--terraform] [--ephemeral-branch-prefix <prefix>] [--disable-ephemeral-branch-check] [--branch-name <name>] [--debug]
-    const args = process.argv.slice(2);
-    let configFile, env, region, output = 'json', delimiter = '.', tfMode = false, ephemeralBranchPrefix, disableEphemeralBranchCheck = false, branchName, component, debugMode = false;
+    const { program, Option } = require('commander');
 
-    for (let i = 0; i < args.length; i++) {
-        switch (args[i]) {
-            case '--config':
-                configFile = args[++i];
-                break;
-            case '--env':
-                env = args[++i];
-                break;
-            case '--region':
-                region = args[++i];
-                break;
-            case '--output':
-                output = args[++i].toLowerCase();
-                if (!['json', 'flatten'].includes(output)) {
-                    console.error(`Invalid value for --output: ${output}. Must be 'json' or 'flatten'.`);
-                    process.exit(1);
-                }
-                break;
-            case '--delimiter':
-                delimiter = args[++i];
-                break;
-            case '--terraform':
-                tfMode = true;
-                break;
-            case '--ephemeral-branch-prefix':
-                ephemeralBranchPrefix = args[++i];
-                break;
-            case '--disable-ephemeral-branch-check':
-                disableEphemeralBranchCheck = true;
-                break;
-            case '--branch-name':
-                branchName = args[++i];
-                break;
-            case '--component':
-                component = args[++i];
-                break;
-            case '--debug':
-                debugMode = true;
-                break;
-            default:
-                console.error(`Unrecognized argument: ${args[i]}`);
-                process.exit(1);
-        }
-    }
+    program
+        .name('unified-deploy-config')
+        .description('Merge configuration files for different environments and regions')
+        .requiredOption('--config <path>', 'Path to the configuration file')
+        .requiredOption('--env <env>', 'Environment name')
+        .option('--region <region>', 'Region code or name')
+        .addOption(
+            new Option('--output <format>', 'Output format (json or flatten)')
+                .choices(['json', 'flatten'])
+                .default('json')
+        )
+        .option('--delimiter <char>', 'Delimiter for flattened output', '.')
+        .option('--terraform', 'Enable Terraform output mode', false)
+        .option('--ephemeral-branch-prefix <prefix>', 'Prefix for ephemeral branch names')
+        .option('--disable-ephemeral-branch-check', 'Disable ephemeral branch validation', false)
+        .option('--branch-name <name>', 'Branch name for ephemeral environments')
+        .option('--component <component>', 'Component to hoist to root level')
+        .option('--debug', 'Enable debug mode', false)
+        .parse(process.argv);
 
-    if (!configFile || !env) {
-        console.error('Usage: merge-config.js --config <configFile> --env <env> [--region <region>] [--output json|flatten] [--delimiter <char>] [--terraform] [--ephemeral-branch-prefix <prefix>] [--branch-name <name>] [--debug]');
-        process.exit(1);
-    }
+    const options = program.opts();
 
-    const result = mergeConfig({ configFile, env, region, output, delimiter, ephemeralBranchPrefix, disableEphemeralBranchCheck, branchName, component });
+    const result = mergeConfig({
+        configFile: options.config,
+        env: options.env,
+        region: options.region,
+        output: options.output,
+        delimiter: options.delimiter,
+        ephemeralBranchPrefix: options.ephemeralBranchPrefix,
+        disableEphemeralBranchCheck: options.disableEphemeralBranchCheck,
+        branchName: options.branchName,
+        component: options.component
+    });
 
-    if (tfMode) {
+    if (options.terraform) {
         // If debug mode is enabled, output human-readable config to stderr for visibility
-        if (debugMode) {
+        if (options.debug) {
             console.error('=== DEBUG: Merged Configuration ===');
             console.error(JSON.stringify(result, null, 2));
             console.error('=== END DEBUG ===');
