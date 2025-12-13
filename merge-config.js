@@ -247,7 +247,13 @@ if (require.main === module) {
 
     program
         .name('unified-deploy-config')
-        .description('Merge configuration files for different environments and regions')
+        .description('Unified configuration management tool')
+        .version('1.0.0');
+
+    // Parse command - merge configurations for different environments and regions
+    program
+        .command('parse', { isDefault: true })
+        .description('Parse and merge configuration settings for specified environments and regions')
         .requiredOption('--config <path>', 'Path to the configuration file')
         .requiredOption('--env <env>', 'Environment name')
         .option('--region <region>', 'Region code or name')
@@ -263,48 +269,77 @@ if (require.main === module) {
         .option('--branch-name <name>', 'Branch name for ephemeral environments')
         .option('--component <component>', 'Component to hoist to root level')
         .option('--debug', 'Enable debug mode', false)
-        .parse(process.argv);
+        .action((options) => {
+            const result = mergeConfig({
+                configFile: options.config,
+                env: options.env,
+                region: options.region,
+                output: options.output,
+                delimiter: options.delimiter,
+                ephemeralBranchPrefix: options.ephemeralBranchPrefix,
+                disableEphemeralBranchCheck: options.disableEphemeralBranchCheck,
+                branchName: options.branchName,
+                component: options.component
+            });
 
-    const options = program.opts();
+            if (options.terraform) {
+                // If debug mode is enabled, output human-readable config to stderr for visibility
+                if (options.debug) {
+                    console.error('=== DEBUG: Merged Configuration ===');
+                    console.error(JSON.stringify(result, null, 2));
+                    console.error('=== END DEBUG ===');
 
-    const result = mergeConfig({
-        configFile: options.config,
-        env: options.env,
-        region: options.region,
-        output: options.output,
-        delimiter: options.delimiter,
-        ephemeralBranchPrefix: options.ephemeralBranchPrefix,
-        disableEphemeralBranchCheck: options.disableEphemeralBranchCheck,
-        branchName: options.branchName,
-        component: options.component
-    });
+                    // Write to a debug file in /tmp with random suffix for easier viewing when called from Terraform
+                    try {
+                        const timestamp = Date.now();
+                        const randomSuffix = Math.random().toString(36).substring(2, 8);
+                        const debugFile = path.join('/tmp', `merge-config-debug-${timestamp}-${randomSuffix}.json`);
+                        fs.writeFileSync(debugFile, JSON.stringify(result, null, 2));
+                        console.error(`=== DEBUG: Debug file written to ${debugFile} ===`);
+                    } catch (e) {
+                        console.error(`=== DEBUG: Could not write debug file: ${e.message} ===`);
+                    }
+                }
 
-    if (options.terraform) {
-        // If debug mode is enabled, output human-readable config to stderr for visibility
-        if (options.debug) {
-            console.error('=== DEBUG: Merged Configuration ===');
-            console.error(JSON.stringify(result, null, 2));
-            console.error('=== END DEBUG ===');
+                // For Terraform, output as { "mergedConfig": <object> }
+                // Terraform needs the mergedConfig value to be a string, which it will then parse as JSON
+                console.log(JSON.stringify({ mergedConfig: JSON.stringify(result) }));
 
-            // Write to a debug file in /tmp with random suffix for easier viewing when called from Terraform
-            try {
-                const timestamp = Date.now();
-                const randomSuffix = Math.random().toString(36).substring(2, 8);
-                const debugFile = path.join('/tmp', `merge-config-debug-${timestamp}-${randomSuffix}.json`);
-                fs.writeFileSync(debugFile, JSON.stringify(result, null, 2));
-                console.error(`=== DEBUG: Debug file written to ${debugFile} ===`);
-            } catch (e) {
-                console.error(`=== DEBUG: Could not write debug file: ${e.message} ===`);
+            } else {
+                // Pretty JSON to stdout
+                console.log(JSON.stringify(result, null, 2));
             }
-        }
+        });
 
-        // For Terraform, output as { "mergedConfig": <object> }
-        // Terraform needs the mergedConfig value to be a string, which it will then parse as JSON
-        console.log(JSON.stringify({ mergedConfig: JSON.stringify(result) }));
+    // Convert command - convert JSON5 to JSON
+    program
+        .command('convert')
+        .description('Convert JSON5 file to standard JSON')
+        .argument('<input>', 'Input JSON5 file path')
+        .argument('[output]', 'Output JSON file path (optional, defaults to stdout)')
+        .option('--minify', 'Minify the JSON output', false)
+        .action((input, output, options) => {
+            try {
+                const inputPath = path.resolve(input);
+                const json5Content = fs.readFileSync(inputPath, 'utf8');
+                const parsed = JSON5.parse(json5Content);
+                const jsonOutput = options.minify
+                    ? JSON.stringify(parsed)
+                    : JSON.stringify(parsed, null, 2);
 
-    } else {
-        // Pretty JSON to stdout
-        console.log(JSON.stringify(result, null, 2));
-    }
+                if (output) {
+                    const outputPath = path.resolve(output);
+                    fs.writeFileSync(outputPath, jsonOutput + '\n', 'utf8');
+                    console.error(`Successfully converted ${input} to ${output}`);
+                } else {
+                    console.log(jsonOutput);
+                }
+            } catch (error) {
+                console.error(`Error converting file: ${error.message}`);
+                process.exit(1);
+            }
+        });
+
+    program.parse(process.argv);
 }
 module.exports = mergeConfig;
