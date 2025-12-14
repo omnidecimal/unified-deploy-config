@@ -1,9 +1,27 @@
 {
   "name": "unified-deploy-config",
   "version": "1.0.0",
+  "description": "Unified configuration management for multi-environment deployments",
   "main": "index.js",
   "bin": {
     "udc": "./cli.js"
+  },
+  "files": [
+    "cli.js",
+    "index.js",
+    "lib/"
+  ],
+  "keywords": [
+    "config",
+    "configuration",
+    "deploy",
+    "terraform",
+    "github-actions",
+    "json5"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/omnidecimal/unified-deploy-config.git"
   },
   "license": "MIT",
   "scripts": {
