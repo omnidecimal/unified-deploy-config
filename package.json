@@ -4,7 +4,7 @@
   "description": "Unified configuration management for multi-environment deployments",
   "main": "index.js",
   "bin": {
-    "udc": "./cli.js"
+    "udc": "cli.js"
   },
   "files": [
     "cli.js",
