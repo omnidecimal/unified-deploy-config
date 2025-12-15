@@ -5,16 +5,17 @@ const path = require('path');
 const JSON5 = require('json5');
 const { program, Option } = require('commander');
 const mergeConfig = require('./lib/merge-config');
+const { checkComponentAvailability } = require('./lib/component-check');
 
 program
     .name('unified-deploy-config')
-    .description('Unified configuration management tool')
+    .description('Unified Deployment Configuration (UDC) management tool')
     .version('1.0.0');
 
 // Parse command - merge configurations for different environments and regions
 program
-    .command('parse', { isDefault: true })
-    .description('Parse and merge configuration settings for specified environments and regions')
+    .command('resolve', { isDefault: true })
+    .description('Show resolved active configuration for a specified environment and region')
     .requiredOption('--config <path>', 'Path to the configuration file')
     .requiredOption('--env <env>', 'Environment name')
     .option('--region <region>', 'Region code or name')
@@ -69,6 +70,47 @@ program
         } else {
             // Pretty JSON to stdout
             console.log(JSON.stringify(result, null, 2));
+        }
+    });
+
+// Where command - find environments where a component is active
+program
+    .command('where')
+    .description('Find environments where a component has valid configuration (no null values)')
+    .requiredOption('--config <path>', 'Path to the configuration file')
+    .requiredOption('--component <name>', 'Component name to check')
+    .addOption(
+        new Option('--output <format>', 'Output format')
+            .choices(['json', 'list'])
+            .default('json')
+    )
+    .action((options) => {
+        const configPath = path.resolve(options.config);
+        const configContent = fs.readFileSync(configPath, 'utf8');
+        const config = JSON5.parse(configContent);
+
+        const results = checkComponentAvailability(config, options.component);
+
+        if (results.length === 0 && !(config.accounts || config.environments)) {
+            console.error('No environments or accounts found in config file');
+            process.exit(1);
+        }
+
+        if (options.output === 'list') {
+            const validEnvs = results.filter(r => r.valid);
+            for (const env of validEnvs) {
+                // Only show bare environment name if env-level is valid
+                if (env.envLevel.valid) {
+                    console.log(env.environment);
+                }
+                if (env.regions) {
+                    for (const reg of env.regions.filter(r => r.valid)) {
+                        console.log(`${env.environment}/${reg.region}`);
+                    }
+                }
+            }
+        } else {
+            console.log(JSON.stringify(results, null, 2));
         }
     });
 
