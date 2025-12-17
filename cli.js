@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const JSON5 = require('json5');
 const { program, Option } = require('commander');
-const mergeConfig = require('./lib/merge-config');
+const { mergeConfig, parseTarget } = require('./lib/merge-config');
 const { checkComponentAvailability } = require('./lib/component-check');
 
 program
@@ -17,8 +17,9 @@ program
     .command('resolve', { isDefault: true })
     .description('Show resolved active configuration for a specified environment and region')
     .requiredOption('--config <path>', 'Path to the configuration file')
-    .requiredOption('--env <env>', 'Environment name')
-    .option('--region <region>', 'Region code or name')
+    .option('--target <target>', 'Target ID in format: environmentname[-regionid] (e.g., dev-usw2)')
+    .option('--env <env>', 'Environment name (cannot be used with --target)')
+    .option('--region <region>', 'Region code or name (cannot be used with --target)')
     .addOption(
         new Option('--output <format>', 'Output format (json or flatten)')
             .choices(['json', 'flatten'])
@@ -32,10 +33,31 @@ program
     .option('--component <component>', 'Component to hoist to root level')
     .option('--debug', 'Enable debug mode', false)
     .action((options) => {
+        // Validate mutually exclusive options
+        if (options.target && (options.env || options.region)) {
+            console.error('Error: --target cannot be used with --env or --region');
+            process.exit(1);
+        }
+        if (!options.target && !options.env) {
+            console.error('Error: Either --target or --env must be specified');
+            process.exit(1);
+        }
+
+        // Parse target or use env/region directly
+        let env, region;
+        if (options.target) {
+            const parsed = parseTarget(options.target);
+            env = parsed.env;
+            region = parsed.region;
+        } else {
+            env = options.env;
+            region = options.region;
+        }
+
         const result = mergeConfig({
             configFile: options.config,
-            env: options.env,
-            region: options.region,
+            env: env,
+            region: region,
             output: options.output,
             delimiter: options.delimiter,
             ephemeralBranchPrefix: options.ephemeralBranchPrefix,
@@ -105,7 +127,8 @@ program
                 }
                 if (env.regions) {
                     for (const reg of env.regions.filter(r => r.valid)) {
-                        console.log(`${env.environment}/${reg.region}`);
+                        // Output as target ID: environment-regionshortcode
+                        console.log(`${env.environment}-${reg.regionShort}`);
                     }
                 }
             }

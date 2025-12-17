@@ -110,7 +110,7 @@ describe('where command', () => {
                 envLevel: { valid: false, reason: 'null_value_at_setting1' }
             });
             expect(result[0].regions).toEqual([
-                { region: 'us-west-2', valid: true, hasConfig: true }
+                { region: 'us-west-2', regionShort: 'usw2', valid: true, hasConfig: true }
             ]);
         });
 
@@ -182,8 +182,8 @@ describe('where command', () => {
                 envLevel: { valid: true, hasConfig: false }  // no env-level config
             });
             expect(result[0].regions).toEqual([
-                { region: 'us-west-2', valid: true, hasConfig: true },   // has region config
-                { region: 'us-east-1', valid: true, hasConfig: false }   // no region config
+                { region: 'us-west-2', regionShort: 'usw2', valid: true, hasConfig: true },   // has region config
+                { region: 'us-east-1', regionShort: 'use1', valid: true, hasConfig: false }   // no region config
             ]);
         });
 
@@ -211,7 +211,7 @@ describe('where command', () => {
                 envLevel: { valid: true, hasConfig: false }
             });
             expect(result[0].regions).toEqual([
-                { region: 'us-west-2', valid: false, reason: 'null_value_at_setting1' }
+                { region: 'us-west-2', regionShort: 'usw2', valid: false, reason: 'null_value_at_setting1' }
             ]);
         });
     });
@@ -236,7 +236,7 @@ describe('where command', () => {
             const result = runWhere(configFile, 'mycomponent', 'list');
 
             expect(result).toContain('dev');
-            expect(result).toContain('dev/us-west-2');
+            expect(result).toContain('dev-usw2');
             expect(result).not.toContain('prod');
         });
 
@@ -259,7 +259,7 @@ describe('where command', () => {
             const result = runWhere(configFile, 'mycomponent', 'list');
 
             expect(result).not.toContain('dev');  // env-level invalid
-            expect(result).toContain('dev/us-west-2');  // region valid
+            expect(result).toContain('dev-usw2');  // region valid
         });
 
         test('should return empty for completely invalid component', () => {
