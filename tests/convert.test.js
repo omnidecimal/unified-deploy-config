@@ -4,6 +4,7 @@ const { execSync } = require('child_process');
 const os = require('os');
 
 describe('convert command', () => {
+  const cliPath = path.join(__dirname, '..', 'cli.js');
   let tempDir;
 
   beforeEach(() => {
@@ -29,7 +30,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node cli.js convert "${inputFile}"`, {
+    const result = execSync(`node ${cliPath} convert "${inputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -49,7 +50,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    execSync(`node cli.js convert "${inputFile}" "${outputFile}"`, {
+    execSync(`node ${cliPath} convert "${inputFile}" "${outputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -67,7 +68,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node cli.js convert "${inputFile}"`, {
+    const result = execSync(`node ${cliPath} convert "${inputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -88,7 +89,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node cli.js convert "${inputFile}" --minify`, {
+    const result = execSync(`node ${cliPath} convert "${inputFile}" --minify`, {
       encoding: 'utf8'
     });
 
@@ -114,7 +115,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node cli.js convert "${inputFile}"`, {
+    const result = execSync(`node ${cliPath} convert "${inputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -136,7 +137,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node cli.js convert "${inputFile}"`, {
+    const result = execSync(`node ${cliPath} convert "${inputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -156,7 +157,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node cli.js convert "${inputFile}"`, {
+    const result = execSync(`node ${cliPath} convert "${inputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -176,7 +177,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node cli.js convert "${inputFile}"`, {
+    const result = execSync(`node ${cliPath} convert "${inputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -204,7 +205,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node cli.js convert "${inputFile}"`, {
+    const result = execSync(`node ${cliPath} convert "${inputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -215,7 +216,8 @@ describe('convert command', () => {
   });
 
   test('should convert existing test-cfg.json5 file', () => {
-    const result = execSync('node cli.js convert test-cfg.json5', {
+    const testConfigPath = path.join(__dirname, '..', 'test-cfg.json5');
+    const result = execSync(`node ${cliPath} convert ${testConfigPath}`, {
       encoding: 'utf8'
     });
 
@@ -230,7 +232,7 @@ describe('convert command', () => {
     const nonExistentFile = path.join(tempDir, 'does-not-exist.json5');
 
     expect(() => {
-      execSync(`node cli.js convert "${nonExistentFile}"`, {
+      execSync(`node ${cliPath} convert "${nonExistentFile}"`, {
         encoding: 'utf8',
         stdio: 'pipe'
       });
@@ -246,7 +248,7 @@ describe('convert command', () => {
     fs.writeFileSync(inputFile, invalidContent, 'utf8');
 
     expect(() => {
-      execSync(`node cli.js convert "${inputFile}"`, {
+      execSync(`node ${cliPath} convert "${inputFile}"`, {
         encoding: 'utf8',
         stdio: 'pipe'
       });
@@ -260,7 +262,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    execSync(`node cli.js convert "${inputFile}" "${outputFile}"`, {
+    execSync(`node ${cliPath} convert "${inputFile}" "${outputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -284,7 +286,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    execSync(`node cli.js convert "${inputFile}" "${outputFile}" --minify`, {
+    execSync(`node ${cliPath} convert "${inputFile}" "${outputFile}" --minify`, {
       encoding: 'utf8'
     });
 
@@ -309,7 +311,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node cli.js convert "${inputFile}"`, {
+    const result = execSync(`node ${cliPath} convert "${inputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -332,7 +334,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    const result = execSync(`node cli.js convert "${inputFile}"`, {
+    const result = execSync(`node ${cliPath} convert "${inputFile}"`, {
       encoding: 'utf8'
     });
 
@@ -346,7 +348,7 @@ describe('convert command', () => {
   });
 
   test('should show help for convert command', () => {
-    const result = execSync('node cli.js convert --help', {
+    const result = execSync(`node ${cliPath} convert --help`, {
       encoding: 'utf8'
     });
 
@@ -363,7 +365,7 @@ describe('convert command', () => {
 
     fs.writeFileSync(inputFile, json5Content, 'utf8');
 
-    execSync(`node cli.js convert "${inputFile}" "${outputFile}"`, {
+    execSync(`node ${cliPath} convert "${inputFile}" "${outputFile}"`, {
       encoding: 'utf8'
     });
 

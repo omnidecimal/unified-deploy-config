@@ -1,12 +1,12 @@
 module.exports = {
   testEnvironment: 'node',
   collectCoverageFrom: [
-    '*.js',
+    'lib/**/*.js',
+    'cli.js',
     '!dist/**',
     '!node_modules/**'
   ],
   testMatch: [
-    '**/__tests__/**/*.js',
-    '**/*.test.js'
+    '<rootDir>/tests/**/*.test.js'
   ]
 };

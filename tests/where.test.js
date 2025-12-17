@@ -4,6 +4,7 @@ const { execSync } = require('child_process');
 const os = require('os');
 
 describe('where command', () => {
+    const cliPath = path.join(__dirname, '..', 'cli.js');
     let tempDir;
 
     beforeEach(() => {
@@ -24,7 +25,7 @@ describe('where command', () => {
 
     function runWhere(configFile, component, outputFormat = 'json') {
         const result = execSync(
-            `node cli.js where --config "${configFile}" --component ${component} --output ${outputFormat}`,
+            `node ${cliPath} where --config "${configFile}" --component ${component} --output ${outputFormat}`,
             { encoding: 'utf8' }
         );
         return outputFormat === 'json' ? JSON.parse(result) : result.trim().split('\n');
@@ -274,7 +275,7 @@ describe('where command', () => {
             });
 
             const result = execSync(
-                `node cli.js where --config "${configFile}" --component mycomponent --output list`,
+                `node ${cliPath} where --config "${configFile}" --component mycomponent --output list`,
                 { encoding: 'utf8' }
             );
 

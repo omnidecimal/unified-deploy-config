@@ -17,7 +17,7 @@ program
     .command('resolve', { isDefault: true })
     .description('Show resolved active configuration for a specified environment and region')
     .requiredOption('--config <path>', 'Path to the configuration file')
-    .option('--target <target>', 'Target ID in format: environmentname[-regionid] (e.g., dev-usw2)')
+    .option('--target <deployment-id>', 'Target Deployment ID in format: environment[-region] (e.g., dev-usw2)')
     .option('--env <env>', 'Environment name (cannot be used with --target)')
     .option('--region <region>', 'Region code or name (cannot be used with --target)')
     .addOption(

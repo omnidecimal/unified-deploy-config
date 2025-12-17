@@ -1,8 +1,8 @@
-const mergeConfig = require('./lib/merge-config');
+const mergeConfig = require('../lib/merge-config');
 const path = require('path');
 
 describe('component functionality', () => {
-  const DefaultTestConfigFile = path.join(__dirname, 'test-cfg.json5');
+  const DefaultTestConfigFile = path.join(__dirname, '..', 'test-cfg.json5');
 
   test('should handle component hoisting for tfState', () => {
     const result = mergeConfig({

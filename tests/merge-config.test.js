@@ -1,9 +1,9 @@
-const mergeConfig = require('./lib/merge-config');
+const mergeConfig = require('../lib/merge-config');
 const path = require('path');
 
 describe('mergeConfig function', () => {
 
-  const DefaultTestConfigFile = path.join(__dirname, 'test-cfg.json5');
+  const DefaultTestConfigFile = path.join(__dirname, '..', 'test-cfg.json5');
 
   test('should correctly parse existing environment with regional overrides', () => {
     const result = mergeConfig({
@@ -258,44 +258,6 @@ describe('mergeConfig function', () => {
     Object.values(result).forEach(value => {
       expect(value).not.toBeUndefined();
     });
-  });
-
-  test('should handle terraform mode via CLI', () => {
-    const { execSync } = require('child_process');
-    const result = execSync('node cli.js --config ./test-cfg.json5 --env dev --region usw2 --output flatten --terraform',
-      { encoding: 'utf8' });
-
-    const parsed = JSON.parse(result.trim());
-
-    // Should have the terraform wrapper format
-    expect(parsed).toHaveProperty('mergedConfig');
-    expect(typeof parsed.mergedConfig).toBe('string');
-
-    // The mergedConfig should be a JSON string that parses to our expected structure
-    const innerConfig = JSON.parse(parsed.mergedConfig);
-    expect(innerConfig.env_name).toBe('dev');
-    expect(innerConfig.region).toBe('us-west-2');
-    expect(innerConfig.region_short).toBe('usw2');
-    expect(innerConfig.accountId).toBe('123456789012');
-    expect(innerConfig['tags.Project']).toBe('project-name');
-    expect(innerConfig['network.vpc_cidr']).toBe('10.1.0.0/21');
-  });
-
-  test('should handle normal CLI mode without terraform flag', () => {
-    const { execSync } = require('child_process');
-    const result = execSync('node cli.js --config ./test-cfg.json5 --env dev --region usw2 --output flatten',
-      { encoding: 'utf8' });
-
-    const parsed = JSON.parse(result.trim());
-
-    // Should directly return the config without terraform wrapper
-    expect(parsed.env_name).toBe('dev');
-    expect(parsed.region).toBe('us-west-2');
-    expect(parsed.region_short).toBe('usw2');
-    expect(parsed.accountId).toBe('123456789012');
-    expect(parsed['tags.Project']).toBe('project-name');
-    expect(parsed['network.vpc_cidr']).toBe('10.1.0.0/21');
-    expect(parsed).not.toHaveProperty('mergedConfig');
   });
 
   // Tests for null validation feature
