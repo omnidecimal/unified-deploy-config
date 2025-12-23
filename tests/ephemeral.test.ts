@@ -1,5 +1,10 @@
-const mergeConfig = require('../lib/merge-config');
-const path = require('path');
+import { describe, test, expect } from 'vitest';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { mergeConfig } from '../src/lib/merge-config.js';
+import type { DeploymentConfig, FlattenedConfig, MergedConfig } from '../src/types/index.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('ephemeral environment functionality', () => {
   const DefaultTestConfigFile = path.join(__dirname, '..', 'test-cfg.json5');
@@ -13,7 +18,7 @@ describe('ephemeral environment functionality', () => {
       delimiter: '.',
       ephemeralBranchPrefix: undefined,
       branchName: 'ephemeral/test-branch'
-    });
+    }) as FlattenedConfig;
 
     expect(result.env_name).toBe('dev');
     expect(result.env_config_name).toBe('dev');
@@ -29,7 +34,7 @@ describe('ephemeral environment functionality', () => {
       delimiter: '.',
       ephemeralBranchPrefix: '',
       branchName: 'ephemeral/test-branch'
-    });
+    }) as FlattenedConfig;
 
     expect(result.env_name).toBe('dev');
     expect(result.env_config_name).toBe('dev');
@@ -45,7 +50,7 @@ describe('ephemeral environment functionality', () => {
       delimiter: '.',
       ephemeralBranchPrefix: '   ',
       branchName: 'ephemeral/test-branch'
-    });
+    }) as FlattenedConfig;
 
     expect(result.env_name).toBe('dev');
     expect(result.env_config_name).toBe('dev');
@@ -61,7 +66,7 @@ describe('ephemeral environment functionality', () => {
       delimiter: '.',
       ephemeralBranchPrefix: 'ephemeral/',
       branchName: 'ephemeral/test-branch'
-    });
+    }) as FlattenedConfig;
 
     expect(result.env_name).toBe('dev');
     expect(result.env_config_name).toBe('dev');
@@ -113,7 +118,7 @@ describe('ephemeral environment functionality', () => {
       delimiter: '.',
       ephemeralBranchPrefix: 'ephemeral/',
       branchName: 'ephemeral/test-feature'
-    });
+    }) as FlattenedConfig;
 
     expect(result.env_name).toBe('test-feature');
     expect(result.env_config_name).toBe('ephemeral');
@@ -130,7 +135,7 @@ describe('ephemeral environment functionality', () => {
       delimiter: '.',
       ephemeralBranchPrefix: 'ephemeral/',
       branchName: 'ephemeral/test-feature'
-    });
+    }) as FlattenedConfig;
 
     expect(result.env_name).toBe('test-feature');
     expect(result.env_config_name).toBe('ephemeral');
@@ -147,7 +152,7 @@ describe('ephemeral environment functionality', () => {
       delimiter: '.',
       ephemeralBranchPrefix: 'ephemeral/',
       branchName: 'ephemeral/feature-123-test'
-    });
+    }) as FlattenedConfig;
 
     expect(result.env_name).toBe('feature-123-test');
     expect(result.env_config_name).toBe('ephemeral');
@@ -163,7 +168,7 @@ describe('ephemeral environment functionality', () => {
       delimiter: '.',
       ephemeralBranchPrefix: 'preview/',
       branchName: 'preview/my-feature'
-    });
+    }) as FlattenedConfig;
 
     expect(result.env_name).toBe('my-feature');
     expect(result.env_config_name).toBe('ephemeral');
@@ -221,7 +226,7 @@ describe('ephemeral environment functionality', () => {
       delimiter: '.',
       ephemeralBranchPrefix: 'ephemeral/',
       branchName: 'ephemeral/feature_with_underscores'
-    });
+    }) as FlattenedConfig;
 
     expect(result.env_name).toBe('feature_with_underscores');
     expect(result.env_config_name).toBe('ephemeral');
@@ -251,7 +256,7 @@ describe('ephemeral environment functionality', () => {
       delimiter: '.',
       ephemeralBranchPrefix: 'preview.',
       branchName: 'preview.test-branch'
-    });
+    }) as FlattenedConfig;
 
     expect(result.env_name).toBe('test-branch');
     expect(result.env_config_name).toBe('ephemeral');
@@ -267,7 +272,7 @@ describe('ephemeral environment functionality', () => {
       delimiter: '.',
       ephemeralBranchPrefix: 'test[branch]/',
       branchName: 'test[branch]/my-feature'
-    });
+    }) as FlattenedConfig;
 
     expect(result.env_name).toBe('my-feature');
     expect(result.env_config_name).toBe('ephemeral');
@@ -283,7 +288,7 @@ describe('ephemeral environment functionality', () => {
       delimiter: '.',
       ephemeralBranchPrefix: 'ephemeral/',
       branchName: 'ephemeral/my-test-branch'
-    });
+    }) as FlattenedConfig;
 
     expect(result.env_name).toBe('my-test-branch');
     expect(result.env_config_name).toBe('ephemeral');
@@ -292,7 +297,7 @@ describe('ephemeral environment functionality', () => {
   });
 
   test('should use existing "ephemeral" config when env="ephemeral"', () => {
-    const customConfig = {
+    const customConfig: DeploymentConfig = {
       environments: {
         ephemeral: {
           accountId: 'ephemeral-acct-id',
@@ -307,7 +312,7 @@ describe('ephemeral environment functionality', () => {
       region: 'usw2',
       ephemeralBranchPrefix: 'ephemeral/',
       branchName: 'ephemeral/my-branch'
-    });
+    }) as MergedConfig;
 
     expect(result.env_name).toBe('my-branch');
     expect(result.env_config_name).toBe('ephemeral');
@@ -323,7 +328,7 @@ describe('ephemeral environment functionality', () => {
       region: 'usw2',
       ephemeralBranchPrefix: 'ephemeral/',
       branchName: undefined
-    });
+    }) as FlattenedConfig;
 
     expect(result.env_name).toBe('ephemeral');
     expect(result.env_config_name).toBe('ephemeral');
@@ -339,5 +344,4 @@ describe('ephemeral environment functionality', () => {
       branchName: 'invalid-branch'
     })).toThrow("Ephemeral environment branches must follow the format 'ephemeral/<name>' where <name> contains only lowercase letters, numbers, hyphens, and underscores. Current branch: invalid-branch");
   });
-
 });

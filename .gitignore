@@ -1,5 +1,10 @@
 # compiled output
 /node_modules
+
+# Build outputs (npm artifacts - published, not committed)
+# Keep dist/action/ and dist/terraform/ (committed by CI)
+/dist/esm/
+/dist/cjs/
 *~
 
 # Logs

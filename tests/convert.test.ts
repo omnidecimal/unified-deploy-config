@@ -1,11 +1,15 @@
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
-const os = require('os');
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
+import { execSync } from 'node:child_process';
+import os from 'node:os';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('convert command', () => {
-  const cliPath = path.join(__dirname, '..', 'cli.js');
-  let tempDir;
+  const cliPath = path.join(__dirname, '..', 'dist', 'esm', 'cli.js');
+  let tempDir: string;
 
   beforeEach(() => {
     // Create a temporary directory for test files

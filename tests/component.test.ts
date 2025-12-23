@@ -1,5 +1,10 @@
-const mergeConfig = require('../lib/merge-config');
-const path = require('path');
+import { describe, test, expect } from 'vitest';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { mergeConfig } from '../src/lib/merge-config.js';
+import type { FlattenedConfig } from '../src/types/index.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('component functionality', () => {
   const DefaultTestConfigFile = path.join(__dirname, '..', 'test-cfg.json5');
@@ -12,7 +17,7 @@ describe('component functionality', () => {
       output: 'flatten',
       delimiter: '.',
       component: 'tfState'
-    });
+    }) as FlattenedConfig;
 
     // Should only have tfState values at root level plus metadata
     expect(result.bucketName).toBe('tf-state-bucket');
@@ -37,7 +42,7 @@ describe('component functionality', () => {
       output: 'flatten',
       delimiter: '.',
       component: 'network'
-    });
+    }) as FlattenedConfig;
 
     // Should only have network values at root level plus metadata
     expect(result.vpc_cidr).toBe('10.1.0.0/21');
@@ -77,7 +82,7 @@ describe('component functionality', () => {
       output: 'flatten',
       delimiter: '.'
       // component not specified
-    });
+    }) as FlattenedConfig;
 
     // Should have all components flattened
     expect(result['tfState.bucketName']).toBe('tf-state-bucket');
@@ -93,7 +98,7 @@ describe('component functionality', () => {
       region: 'usw2',
       output: 'flatten',
       component: 'network'
-    });
+    }) as FlattenedConfig;
 
     // Verify common metadata is retained
     expect(result.env_name).toBe('dev');
@@ -102,5 +107,4 @@ describe('component functionality', () => {
     expect(result.accountId).toBe('123456789012');
     expect(result.is_ephemeral).toBe(false);
   });
-
 });

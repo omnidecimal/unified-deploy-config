@@ -1,8 +1,12 @@
-const mergeConfig = require('../lib/merge-config');
-const path = require('path');
+import { describe, test, expect } from 'vitest';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { mergeConfig } from '../src/lib/merge-config.js';
+import type { DeploymentConfig, MergedConfig, FlattenedConfig } from '../src/types/index.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('mergeConfig function', () => {
-
   const DefaultTestConfigFile = path.join(__dirname, '..', 'test-cfg.json5');
 
   test('should correctly parse existing environment with regional overrides', () => {
@@ -12,7 +16,7 @@ describe('mergeConfig function', () => {
       region: 'usw2',
       output: 'flatten',
       delimiter: '.'
-    });
+    }) as FlattenedConfig;
 
     // Verify specific values that should be present for dev/usw2
     expect(result.env_name).toBe('dev');
@@ -36,7 +40,7 @@ describe('mergeConfig function', () => {
       region: 'usw2',
       output: 'flatten',
       delimiter: '.'
-    });
+    }) as FlattenedConfig;
 
     // Verify ephemeral environment works with concrete values
     expect(result.env_name).toBe('ephemeral');
@@ -60,7 +64,7 @@ describe('mergeConfig function', () => {
       region: 'usw2',
       output: 'flatten',
       delimiter: '_'
-    });
+    }) as FlattenedConfig;
 
     // Verify custom delimiter is used
     expect(result.env_name).toBe('dev');
@@ -81,9 +85,9 @@ describe('mergeConfig function', () => {
       configFile: DefaultTestConfigFile,
       env: 'dev',
       region: 'usw2',
-      output: 'object',
+      output: 'json',
       delimiter: '.'
-    });
+    }) as MergedConfig;
 
     // Verify nested structure is preserved
     expect(result.env_name).toBe('dev');
@@ -94,12 +98,12 @@ describe('mergeConfig function', () => {
       Project: 'project-name',
       ManagedBy: 'terraform'
     });
-    expect(result.network.vpc_cidr).toBe('10.1.0.0/21');
-    expect(result.network.nat_instance_type).toBe('t4g.nano');
+    expect((result.network as Record<string, unknown>).vpc_cidr).toBe('10.1.0.0/21');
+    expect((result.network as Record<string, unknown>).nat_instance_type).toBe('t4g.nano');
 
     // Verify flattened keys don't exist
-    expect(result['tags.Project']).toBeUndefined();
-    expect(result['network.vpc_cidr']).toBeUndefined();
+    expect((result as unknown as FlattenedConfig)['tags.Project']).toBeUndefined();
+    expect((result as unknown as FlattenedConfig)['network.vpc_cidr']).toBeUndefined();
   });
 
   test('should throw error for invalid environment', () => {
@@ -144,7 +148,7 @@ describe('mergeConfig function', () => {
       region: 'use1',
       output: 'flatten',
       delimiter: '.'
-    });
+    }) as FlattenedConfig;
 
     expect(result.env_name).toBe('dev');
     expect(result.region).toBe('us-east-1'); // Should convert short code to full name
@@ -184,7 +188,7 @@ describe('mergeConfig function', () => {
       region: 'usw2',  // Short code
       output: 'flatten',
       delimiter: '.'
-    });
+    }) as FlattenedConfig;
 
     // Should convert short code to full region name
     expect(result.env_name).toBe('dev');
@@ -201,7 +205,7 @@ describe('mergeConfig function', () => {
       region: 'us-west-2',  // Full name
       output: 'flatten',
       delimiter: '.'
-    });
+    }) as FlattenedConfig;
 
     // Should keep full region name and derive short code
     expect(result.env_name).toBe('dev');
@@ -252,7 +256,7 @@ describe('mergeConfig function', () => {
       region: 'usw2',
       output: 'flatten',
       delimiter: '.'
-    });
+    }) as FlattenedConfig;
 
     // Ensure no undefined values in the output
     Object.values(result).forEach(value => {
@@ -291,13 +295,13 @@ describe('mergeConfig function', () => {
       region: 'usw2',
       output: 'flatten',
       delimiter: '.'
-    });
+    }) as FlattenedConfig;
     expect(result['network.required_network_val']).toBe('dev-network-value');
   });
 
   test('should validate null values in nested objects', () => {
     // Create a config with nested null values
-    const configWithNestedNull = {
+    const configWithNestedNull: DeploymentConfig = {
       defaults: {
         deeply: {
           nested: {
@@ -322,7 +326,7 @@ describe('mergeConfig function', () => {
 
   test('should allow null values if overridden by environment', () => {
     // Create a config where null in defaults is overridden
-    const configWithOverride = {
+    const configWithOverride: DeploymentConfig = {
       defaults: {
         testValue: null
       },
@@ -347,8 +351,7 @@ describe('mergeConfig function', () => {
       env: 'test',
       region: '',
       output: 'json'
-    });
+    }) as MergedConfig;
     expect(result.testValue).toBe('concrete-value');
   });
-
 });
