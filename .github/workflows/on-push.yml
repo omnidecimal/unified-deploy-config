@@ -12,3 +12,5 @@ jobs:
     if: github.ref == 'refs/heads/main'
     needs: test
     uses: ./.github/workflows/build-bundles.yml
+    permissions:
+      contents: write
