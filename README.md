@@ -1,58 +1,65 @@
 # Unified Deploy Config
 
-Unified tooling to define and consume reusable deployment configuration across environments and regions. Supports:
+Utilities to define and consume deployment configuration in a reusable, unified manner.
 
-* GitHub Actions (as an Action that sets flattened outputs)
-* Terraform (module to ingest the merged configuration)
-* Direct Node consumption (NPM package)
+Define a single configuration file in JSON5 format (supports comments, trailing commas, etc.) that defines values for
+any number of components that you manage and need to deploy. Each component can have default values for all
+environments, as well as environment-specific and region-specific overrides.
+
+At deploy time, specify the environment + region (and optionally a single component), and get back a merged
+configuration object containing the active values for that environment/region.
+
+This enables a single source of truth for deployment configuration that can be reused by multiple tools without
+duplicating large sets of variables.
+
+**Integration options**
+
+* GitHub Actions
+* Terraform
+* Node.js / library usage (eg: in an AWS CDK app, custom deployment scripts, etc.)
 * Local CLI
 
-Core idea: maintain a single hierarchical JSON5 (comments allowed) config with defaults, environment overrides, and
-optional per‑region overrides. The tooling merges and validates the requested environment/region producing:
+**Key features**
 
-* Either a nested object or flattened key/value map
-* Ephemeral environment support (branch‑based)
+* Ephemeral environment support (ephemeral name detection based on a Git branch name prefix)
+* Return configuration as either a nested object or flattened key/value map
 * Component hoisting (request only one component at root)
 * Required field validation (no unresolved `null` values)
 
-This makes it easy to manage complex deployment configurations in a single source of truth, and trivial to request the
-"current" or "active" configuration for any environment/region combination in a way that's compatible across multiple
-tools and platforms.
-
 ---
-## Example Configuration (with required fields)
+## Configuration format
 
-### Example Configuration with Required Fields
+### Example (with required fields)
 
 ```json5
 {
-    "defaults": {          // Default values for all environments
-        "database": {      // 'Components' are defined by adding child objects to the root
-            "host": null,  // Must be defined in environment config
-            "port": 5432   // Optional: has default value
-        }
-    },
-    "environments": {      // Environment-specific configurations (will override defaults)
-        "dev": {
-            "database": {
-                "host": "dev-db.example.com"  // Provides environment-level concrete value for required field
-            }
-        },
-        "prod": {
-            "regions": {
-                "us-west-2": {
-                    "database": {
-                        "host": "prod-db.example.com"  // Provides concrete value for required field
-                    },
-                "us-east-1": {
-                    "database": {
-                        // Missing 'host' field here will trigger validation error when requesting this region since
-                        // the 'prod' region does not have an environment-level value defined for 'host'
-                    }
-                }
-            }
-        }
+  "defaults": {           // Default values for all environments
+    "database": {         // Components are objects at the root
+      "host": null,       // Required: must be overridden in env/region
+      "port": 5432        // Optional default
     }
+  },
+  "environments": {       // Environment overrides
+    "dev": {
+      "database": {
+        "host": "dev-db.example.com"
+      }
+    },
+    "prod": {
+      "regions": {
+        "us-west-2": {
+          "database": {
+            "host": "prod-db.example.com"
+          }
+        },
+        "us-east-1": {
+          "database": {
+            // Missing 'host' will trigger a validation error if you request prod + us-east-1
+          }
+        }
+      }
+    }
+  }
 }
 ```
 
@@ -63,7 +70,7 @@ triggers an error (path included) so required values are never silently omitted.
 Action, Terraform, CLI, and library usage.
 
 ---
-## Consumption Methods
+## Integration options
 
 ### GitHub Action
 
@@ -84,15 +91,17 @@ Add to your workflow to expose flattened outputs (dot‑delimited keys):
 
 #### Inputs
 
-| Input                     | Description                                                                                     | Required | Default      |
-|---------------------------|-------------------------------------------------------------------------------------------------|----------|--------------|
-| `config`                  | Path to config JSON file                                                                        | Yes      | -            |
-| `env`                     | Environment (e.g. dev, prod)                                                                    | Yes      | -            |
-| `region`                  | Region (us-east-1, us-west-2, etc.)                                                             | Yes      | -            |
-| `ephemeral-branch-prefix` | Prefix for branches associated with ephemeral environments (set to empty string to disable)     | No       | `ephemeral/` |
-| `delimiter`               | Delimiter for flattening nested properties                                                      | No       | `.`          |
-| `display-outputs`         | Display the merged output for the specified environment/region to the console                   | No       | `true`       |
-| `component`               | Specific component to hoist to root level in the output (e.g. tfState, network)                 | No       | -            |
+| Input                            | Description                                                                                              | Required | Default      |
+|----------------------------------|----------------------------------------------------------------------------------------------------------|----------|--------------|
+| `config`                         | Path to config JSON5 file                                                                                | Yes      | -            |
+| `env`                            | Environment (e.g. dev, prod)                                                                             | Yes      | -            |
+| `region`                         | Region (us-east-1, us-west-2, etc.)                                                                      | Yes      | -            |
+| `ephemeral-branch-prefix`        | Prefix for branches associated with ephemeral environments (set to empty string to disable)              | No       | `ephemeral/` |
+| `disable-ephemeral-branch-check` | Disable requirement that the current branch name matches `ephemeral-branch-prefix` for ephemeral envs    | No       | `false`      |
+| `delimiter`                      | Delimiter for flattening nested properties                                                               | No       | `.`          |
+| `display-outputs`                | Display the merged output for the specified environment/region to the console                            | No       | `true`       |
+| `component`                      | Specific component to hoist to root level in the output (e.g. tfState, network)                          | No       | -            |
+| `github-token`                   | GitHub token to use for authentication with private repositories                                         | No       | -            |
 
 
 #### Full Example
@@ -112,9 +121,9 @@ Add to your workflow to expose flattened outputs (dot‑delimited keys):
     echo "VPC CIDR: ${{ steps.read_deployment_config.outputs['network.vpc_cidr'] }}"
 ```
 
-Note that the output from the unified-deploy-config action returns a flattened version of the merged configuration, where
-nested properties are represented as keys with dot notation. Because of this, you must use bracket notation to access
-these values in from the 'outputs' object, as shown in the example above.
+Note that the output from the unified-deploy-config action returns a flattened version of the merged configuration,
+where nested properties are represented as keys with dot notation. Because of this, you must use bracket notation to
+access these values in from the 'outputs' object, as shown in the example above.
 
 #### Component Hoisting
 
@@ -126,6 +135,9 @@ When using component hoisting:
 - Only the specified component's properties are included at the root level
 - Environment metadata (`env_name`, `env_config_name`, `region`, `region_short`, `is_ephemeral`) is preserved
 - Other components are excluded from the output
+
+Because the Action always returns flattened outputs, component hoisting also means the returned keys are no longer
+prefixed (e.g. `tfState.bucketName` becomes `bucketName`).
 
 Example (hoisting terraform state component):
 
@@ -147,18 +159,18 @@ Example (hoisting terraform state component):
 
 #### jq-json5 Utility
 
-After running the unified-deploy-config action, a `jq-json5` utility is made available in the GitHub Actions runner's PATH.
-This utility combines JSON5 parsing capabilities with jq's powerful JSON filtering and transformation features, allowing
-you to process JSON5 configuration files directly with jq syntax:
+After running the unified-deploy-config action, a `jq-json5` utility is made available in the GitHub Actions runner's
+PATH. This utility combines JSON5 parsing capabilities with jq's powerful JSON filtering and transformation features,
+allowing you to process JSON5 configuration files directly with jq syntax:
 
 ```yaml
 - name: Process config with jq-json5
   run: |
     # Extract specific values from your JSON5 config file
-    jq-json5 './deployment-config.json5' '.network.subnets[] | select(.type == "public")'
+    jq-json5 './deploy-config.json5' '.network.subnets[] | select(.type == "public")'
 
     # Transform and filter configuration data
-    jq-json5 './deployment-config.json5' '.environments.dev | keys'
+    jq-json5 './deploy-config.json5' '.environments.dev | keys'
 ```
 
 ---
@@ -171,7 +183,7 @@ modules, any configuration data should be passed in as normal Terraform variable
 ```hcl
 module "merge_config" {
   source      = "git@github.com/omnidecimal/unified-deploy-config.git//terraform/merge_config?ref=main"
-  config_json = "${path.root}/deploy-config.json"
+  config_json = "${path.root}/deploy-config.json5"
   env         = "dev"
   region      = "us-west-2"
 }
@@ -184,37 +196,16 @@ locals {
 
 ---
 
-### NPM / Node Package Consumption
+### Node.js / library usage
 
-Install with any manager:
+Install:
 
-pnpm:
 ```sh
 pnpm add unified-deploy-config
 ```
-npm:
-```sh
-npm install unified-deploy-config
-```
-Yarn:
-```sh
-yarn add unified-deploy-config
-```
-
-Direct Git reference (optional):
-```sh
-# Latest main (not pinned)
-pnpm add github:omnidecimal/unified-deploy-config#main
-# Specific tag (recommended)
-pnpm add github:omnidecimal/unified-deploy-config#v1.0.0
-# Specific commit
-pnpm add omnidecimal/unified-deploy-config#<commit-sha>
-```
-
-Because tagged releases (and main) include `dist/index.js`, no build step is required after install. Just import:
 
 ```js
-const mergeConfig = require('unified-deploy-config');
+import { mergeConfig } from 'unified-deploy-config';
 
 const merged = mergeConfig({
   configFile: './deploy-config.json5',
@@ -227,7 +218,21 @@ const merged = mergeConfig({
 console.log(merged);
 ```
 
-If you fork and modify source, regenerate the bundle with `pnpm run build:package` before consuming your fork reference.
+CommonJS (`require`) is also supported:
+
+```js
+const { mergeConfig } = require('unified-deploy-config');
+
+const merged = mergeConfig({
+  configFile: './deploy-config.json5',
+  env: 'dev',
+  region: 'us-west-2',
+  output: 'flatten',
+  delimiter: '.'
+});
+
+console.log(merged);
+```
 
 ---
 
@@ -235,9 +240,10 @@ If you fork and modify source, regenerate the bundle with `pnpm run build:packag
 
 #### Installation
 
-Install from npm registry (when published):
+Install globally:
+
 ```sh
-npm install -g unified-deploy-config
+pnpm add -g unified-deploy-config
 ```
 
 Or install from GitHub:
@@ -245,35 +251,50 @@ Or install from GitHub:
 pnpm add -g github:omnidecimal/unified-deploy-config#main
 ```
 
-Or use via npx (no installation required):
+Or run without installing globally:
+
 ```sh
-npx unified-deploy-config --help
+pnpm dlx --package unified-deploy-config udc --help
 ```
 
 #### Commands
 
-The CLI provides two main commands: `parse` (for merging configurations) and `convert` (for converting JSON5 to JSON).
+The CLI executable installed by this package is `udc`.
 
-##### Parse Command
+The default command is `resolve` (merge/resolve configuration). Other commands include `where` and `convert`.
+
+##### Resolve command
 
 Parse and merge configuration for environments and regions:
 
 ```sh
-# Merged JSON (parse is the default command)
-unified-deploy-config parse --config ./test-cfg.json5 --env dev --region us-west-2
-unified-deploy-config --config ./test-cfg.json5 --env dev --region us-west-2  # same as above
+# Merged JSON (resolve is the default command)
+udc resolve --config ./test-cfg.json5 --env dev --region us-west-2
+udc --config ./test-cfg.json5 --env dev --region us-west-2  # same as above
 
 # Flattened output (equivalent to GitHub Action)
-unified-deploy-config parse --config ./test-cfg.json5 --env dev --region us-west-2 --output flatten
+udc resolve --config ./test-cfg.json5 --env dev --region us-west-2 --output flatten
+
+# Target shorthand (environment[-regionshort])
+udc resolve --config ./test-cfg.json5 --target dev-usw2
 
 # Terraform mode output
-unified-deploy-config parse --config ./test-cfg.json5 --env dev --region us-west-2 --terraform
+udc resolve --config ./test-cfg.json5 --env dev --region us-west-2 --terraform
 
 # Get specific component only
-unified-deploy-config parse --config ./test-cfg.json5 --env dev --region us-west-2 --component tfState
+udc resolve --config ./test-cfg.json5 --env dev --region us-west-2 --component tfState
 
 # Get network configuration flattened
-unified-deploy-config parse --config ./test-cfg.json5 --env dev --region us-west-2 --component network --output flatten
+udc resolve --config ./test-cfg.json5 --env dev --region us-west-2 --component network --output flatten
+```
+
+##### Where command
+
+Find environments/regions where a component has valid configuration (no nulls):
+
+```sh
+udc where --config ./test-cfg.json5 --component network
+udc where --config ./test-cfg.json5 --component network --output list
 ```
 
 ##### Convert Command
@@ -282,25 +303,16 @@ Convert JSON5 files to standard JSON:
 
 ```sh
 # Convert to stdout (pretty-printed)
-unified-deploy-config convert config.json5
+udc convert config.json5
 
 # Convert to file
-unified-deploy-config convert config.json5 output.json
+udc convert config.json5 output.json
 
 # Convert with minified output
-unified-deploy-config convert config.json5 --minify
+udc convert config.json5 --minify
 
 # Convert to file with minified output
-unified-deploy-config convert config.json5 output.json --minify
-```
-
-#### Direct Script Usage
-
-You can also run the CLI script directly without installation:
-
-```sh
-node cli.js parse --config ./test-cfg.json5 --env dev --region us-west-2
-node cli.js convert config.json5 output.json
+udc convert config.json5 output.json --minify
 ```
 
 #### Library Usage in Code
@@ -308,8 +320,7 @@ node cli.js convert config.json5 output.json
 The core `mergeConfig` function can be imported and used programmatically:
 
 ```js
-const mergeConfig = require('unified-deploy-config');
-// or if running locally: const mergeConfig = require('./merge-config');
+import { mergeConfig } from 'unified-deploy-config';
 
 const result = mergeConfig({
   configFile: './config.json5',
@@ -323,20 +334,36 @@ const result = mergeConfig({
 ---
 ## Local Development
 
+Prereqs:
+
+- Node.js (see `engines.node` in package.json; currently `>=18`)
+- pnpm
+
 Clone the repo and:
 
-1. Enable Corepack & pin pnpm:
+1. Install deps:
   ```sh
-  corepack enable
-  corepack prepare pnpm@9.0.0 --activate
+  pnpm install
   ```
-2. Install deps: `pnpm install`
-3. Run tests: `pnpm test`
-4. Build everything: `pnpm run build`
-5. Action bundle only: `pnpm run build:gha` (outputs to `action/dist/`)
-6. Library bundle only: `pnpm run build:package` (outputs to `dist/`)
+2. Run tests:
+  ```sh
+  pnpm test
+  ```
+3. Build everything:
+  ```sh
+  pnpm run build
+  ```
 
-Commit the generated bundles (`action/dist/index.js`, `dist/index.js`) when logic changes so consumers and the Action remain self‑contained.
+### Build outputs
+
+The bundles under `dist/` are generated artifacts (Action, Terraform helper, and CJS bundle). They are produced by CI/CD
+as part of the build/release process.
+
+For local testing you can generate them with:
+
+- Action bundle: `pnpm run build:gha` → `dist/action/index.cjs`
+- Terraform bundle: `pnpm run build:terraform` → `dist/terraform/index.cjs`
+- CJS bundle (for `require()` consumers): `pnpm run build:package` → `dist/cjs/index.cjs`
 
 
 
