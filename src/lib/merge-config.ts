@@ -59,19 +59,34 @@ export function getRegionFullName(shortCode: string): string {
 
 /**
  * Parse a target ID into environment and region components.
- * Target format: environmentname[-regionshortcode] (e.g., 'dev-usw2')
+ * Target format: environmentname[-region] where region can be either:
+ *   - Short code (e.g., 'dev-usw2')
+ *   - Full region name (e.g., 'dev-us-west-2')
+ * Returns the full region name (e.g., 'us-west-2') in the result.
  */
 export function parseTarget(target: string): ParsedTarget {
+  // Try to find a full region name at the end of the target first (longer match takes priority)
+  for (const fullRegion of Object.values(AwsRegionMapping) as RegionFullName[]) {
+    const suffix = `-${fullRegion}`;
+    if (target.endsWith(suffix)) {
+      return {
+        env: target.slice(0, -suffix.length),
+        region: fullRegion
+      };
+    }
+  }
+
   // Try to find a region short code at the end of the target
   for (const regionCode of Object.keys(AwsRegionMapping) as RegionShortCode[]) {
     const suffix = `-${regionCode}`;
     if (target.endsWith(suffix)) {
       return {
         env: target.slice(0, -suffix.length),
-        region: regionCode
+        region: AwsRegionMapping[regionCode]
       };
     }
   }
+
   // No region found, entire target is the environment name
   return { env: target, region: undefined };
 }

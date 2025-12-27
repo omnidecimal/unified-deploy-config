@@ -72,7 +72,7 @@ export interface DeploymentConfig {
  */
 export interface ParsedTarget {
   env: string;
-  region: RegionShortCode | undefined;
+  region: RegionFullName | undefined;
 }
 
 /**

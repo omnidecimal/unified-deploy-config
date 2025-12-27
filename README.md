@@ -288,6 +288,19 @@ udc resolve --config ./test-cfg.json5 --env dev --region us-west-2 --component t
 udc resolve --config ./test-cfg.json5 --env dev --region us-west-2 --component network --output flatten
 ```
 
+###### Target shorthand
+
+`--target` is a convenience for specifying an environment and (optionally) a region in a single value:
+
+- Format: `environment[-regionShortCode]`
+- Examples: `dev`, `dev-usw2`, `prod-use1`
+
+The region short codes used by UDC are AWS *region billing codes* (for background, see:
+https://docs.aws.amazon.com/global-infrastructure/latest/regions/aws-region-billing-codes.html).
+
+When you pass a short code via `--target` (or via `--region`), UDC normalizes it to the full region name and also
+returns both `region` and `region_short` metadata fields in the resolved config.
+
 ##### Where command
 
 Find environments/regions where a component has valid configuration (no nulls):

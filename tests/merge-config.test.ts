@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mergeConfig } from '../src/lib/merge-config.js';
+import { mergeConfig, parseTarget } from '../src/lib/merge-config.js';
 import type { DeploymentConfig, MergedConfig, FlattenedConfig } from '../src/types/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -353,5 +353,66 @@ describe('mergeConfig function', () => {
       output: 'json'
     }) as MergedConfig;
     expect(result.testValue).toBe('concrete-value');
+  });
+});
+
+describe('parseTarget function', () => {
+  test('should parse target with short region code and return full region name', () => {
+    const result = parseTarget('dev-usw2');
+    expect(result.env).toBe('dev');
+    expect(result.region).toBe('us-west-2');
+  });
+
+  test('should parse target with full region name', () => {
+    const result = parseTarget('dev-us-west-2');
+    expect(result.env).toBe('dev');
+    expect(result.region).toBe('us-west-2');
+  });
+
+  test('should return undefined region when no region suffix present', () => {
+    const result = parseTarget('production');
+    expect(result.env).toBe('production');
+    expect(result.region).toBeUndefined();
+  });
+
+  test('should handle various short region codes', () => {
+    expect(parseTarget('staging-use1')).toEqual({ env: 'staging', region: 'us-east-1' });
+    expect(parseTarget('staging-use2')).toEqual({ env: 'staging', region: 'us-east-2' });
+    expect(parseTarget('staging-euw1')).toEqual({ env: 'staging', region: 'eu-west-1' });
+    expect(parseTarget('staging-apne1')).toEqual({ env: 'staging', region: 'ap-northeast-1' });
+    expect(parseTarget('staging-sae1')).toEqual({ env: 'staging', region: 'sa-east-1' });
+  });
+
+  test('should handle various full region names', () => {
+    expect(parseTarget('staging-us-east-1')).toEqual({ env: 'staging', region: 'us-east-1' });
+    expect(parseTarget('staging-us-east-2')).toEqual({ env: 'staging', region: 'us-east-2' });
+    expect(parseTarget('staging-eu-west-1')).toEqual({ env: 'staging', region: 'eu-west-1' });
+    expect(parseTarget('staging-ap-northeast-1')).toEqual({ env: 'staging', region: 'ap-northeast-1' });
+    expect(parseTarget('staging-sa-east-1')).toEqual({ env: 'staging', region: 'sa-east-1' });
+  });
+
+  test('should handle environment names with hyphens', () => {
+    const result = parseTarget('my-env-name-usw2');
+    expect(result.env).toBe('my-env-name');
+    expect(result.region).toBe('us-west-2');
+  });
+
+  test('should handle environment names with hyphens and full region name', () => {
+    const result = parseTarget('my-env-name-us-west-2');
+    expect(result.env).toBe('my-env-name');
+    expect(result.region).toBe('us-west-2');
+  });
+
+  test('should not match partial region codes', () => {
+    // 'usw' is not a valid region code, so entire string should be the env
+    const result = parseTarget('test-usw');
+    expect(result.env).toBe('test-usw');
+    expect(result.region).toBeUndefined();
+  });
+
+  test('should handle simple environment names', () => {
+    expect(parseTarget('dev')).toEqual({ env: 'dev', region: undefined });
+    expect(parseTarget('staging')).toEqual({ env: 'staging', region: undefined });
+    expect(parseTarget('production')).toEqual({ env: 'production', region: undefined });
   });
 });
