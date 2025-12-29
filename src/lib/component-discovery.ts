@@ -1,4 +1,5 @@
 import { deepMerge, findNullValue } from './utils.js';
+import { getRegionShortCode } from './merge-config.js';
 import type {
   DeploymentConfig,
   EnvironmentConfig,
@@ -36,7 +37,8 @@ export function checkComponentAvailability(
       for (const region of regions) {
         const regionResult = checkComponentValidity(config, envSource, envName, region, componentName);
         if (regionResult.valid) {
-          regionResults.push({ region, valid: true, hasConfig: regionResult.hasConfig });
+          const regionShort = getRegionShortCode(region);
+          regionResults.push({ region, valid: true, hasConfig: regionResult.hasConfig, target: `${envName}-${regionShort}` });
         } else {
           regionResults.push({ region, valid: false, reason: regionResult.reason });
         }
@@ -50,7 +52,7 @@ export function checkComponentAvailability(
         environment: envName,
         available: isAvailable,
         envLevel: envResult.valid
-          ? { valid: true, hasConfig: envResult.hasConfig }
+          ? { valid: true, hasConfig: envResult.hasConfig, target: envName }
           : { valid: false, reason: envResult.reason },
         regions: regionResults.length > 0 ? regionResults : undefined
       });
@@ -184,7 +186,8 @@ export function checkAllComponentsAvailability(
       for (const region of regions) {
         const regionResult = checkComponentValidity(config, envSource, envName, region, componentName);
         if (regionResult.valid) {
-          regionResults.push({ region, valid: true, hasConfig: regionResult.hasConfig });
+          const regionShort = getRegionShortCode(region);
+          regionResults.push({ region, valid: true, hasConfig: regionResult.hasConfig, target: `${envName}-${regionShort}` });
         } else {
           regionResults.push({ region, valid: false, reason: regionResult.reason });
         }
@@ -196,7 +199,7 @@ export function checkAllComponentsAvailability(
         component: componentName,
         available: envResult.valid || anyRegionValid,
         envLevel: envResult.valid
-          ? { valid: true, hasConfig: envResult.hasConfig }
+          ? { valid: true, hasConfig: envResult.hasConfig, target: envName }
           : { valid: false, reason: envResult.reason },
         regions: regionResults.length > 0 ? regionResults : undefined
       });

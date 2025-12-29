@@ -46,6 +46,7 @@ export interface ComponentValidity {
   valid: boolean;
   reason?: string;
   hasConfig?: boolean;
+  target?: string;
 }
 
 export interface RegionalComponentValidity extends ComponentValidity {

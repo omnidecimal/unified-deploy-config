@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import JSON5 from 'json5';
 import { program, Option } from 'commander';
-import { getRegionShortCode, mergeConfig, parseTarget } from './lib/merge-config.js';
+import { mergeConfig, parseTarget } from './lib/merge-config.js';
 import { checkComponentAvailability, checkAllComponentsAvailability } from './lib/component-discovery.js';
 import type { DeploymentConfig } from './types/index.js';
 
@@ -151,15 +151,12 @@ program
 
       if (options.output === 'list') {
         for (const env of result.environments.filter(e => e.available)) {
-          // Only show bare environment name if env-level is valid
-          if (env.envLevel.valid) {
-            console.log(env.environment);
+          if (env.envLevel.target) {
+            console.log(env.envLevel.target);
           }
           if (env.regions) {
-            for (const reg of env.regions.filter(r => r.valid)) {
-              // Output as target ID: environment-regionshortcode
-              const regionShort = getRegionShortCode(reg.region);
-              console.log(`${env.environment}-${regionShort}`);
+            for (const reg of env.regions.filter(r => r.target)) {
+              console.log(reg.target);
             }
           }
         }
@@ -178,21 +175,20 @@ program
       if (options.output === 'list') {
         // Show all valid targets (where ANY component is valid)
         for (const env of result.environments.filter(e => e.valid)) {
-          // Show environment if any component is valid at env level
-          const anyEnvLevelValid = env.components.some(c => c.envLevel.valid);
-          if (anyEnvLevelValid) {
-            console.log(env.environment);
+          // Show environment target if any component is valid at env level
+          const envLevelTarget = env.components.find(c => c.envLevel.target)?.envLevel.target;
+          if (envLevelTarget) {
+            console.log(envLevelTarget);
           }
-          // Collect all valid regions across all components
-          const validRegions = new Set<string>();
+          // Collect all valid region targets across all components
+          const validTargets = new Set<string>();
           for (const comp of env.components) {
-            for (const reg of (comp.regions ?? []).filter(r => r.valid)) {
-              validRegions.add(reg.region);
+            for (const reg of (comp.regions ?? []).filter(r => r.target)) {
+              validTargets.add(reg.target!);
             }
           }
-          for (const region of validRegions) {
-            const regionShort = getRegionShortCode(region);
-            console.log(`${env.environment}-${regionShort}`);
+          for (const target of validTargets) {
+            console.log(target);
           }
         }
       } else {

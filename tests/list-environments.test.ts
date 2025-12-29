@@ -64,12 +64,12 @@ describe('list-environments command', () => {
       expect(result.environments[0]).toMatchObject({
         environment: 'dev',
         available: true,
-        envLevel: { valid: true, hasConfig: false }  // only in defaults
+        envLevel: { valid: true, hasConfig: false, target: 'dev' }
       });
       expect(result.environments[1]).toMatchObject({
         environment: 'prod',
         available: true,
-        envLevel: { valid: true, hasConfig: false }
+        envLevel: { valid: true, hasConfig: false, target: 'prod' }
       });
     });
 
@@ -97,7 +97,7 @@ describe('list-environments command', () => {
       expect(result.environments.find(r => r.environment === 'prod')).toMatchObject({
         environment: 'prod',
         available: true,
-        envLevel: { valid: true, hasConfig: true }  // has env-specific config
+        envLevel: { valid: true, hasConfig: true, target: 'prod' }  // has env-specific config
       });
     });
 
@@ -126,7 +126,7 @@ describe('list-environments command', () => {
         envLevel: { valid: false, reason: 'null_value_at_setting1' }
       });
       expect(result.environments[0]!.regions).toEqual([
-        { region: 'us-west-2', valid: true, hasConfig: true }
+        { region: 'us-west-2', valid: true, hasConfig: true, target: 'dev-usw2' }
       ]);
     });
 
@@ -195,11 +195,11 @@ describe('list-environments command', () => {
       expect(result.environments[0]).toMatchObject({
         environment: 'dev',
         available: true,
-        envLevel: { valid: true, hasConfig: false }  // no env-level config
+        envLevel: { valid: true, hasConfig: false, target: 'dev' }  // no env-level config
       });
       expect(result.environments[0]!.regions).toEqual([
-        { region: 'us-west-2', valid: true, hasConfig: true },   // has region config
-        { region: 'us-east-1', valid: true, hasConfig: false }   // no region config
+        { region: 'us-west-2', valid: true, hasConfig: true, target: 'dev-usw2' },   // has region config
+        { region: 'us-east-1', valid: true, hasConfig: false, target: 'dev-use1' }   // no region config
       ]);
     });
 
@@ -224,7 +224,7 @@ describe('list-environments command', () => {
       expect(result.environments[0]).toMatchObject({
         environment: 'dev',
         available: true,  // env level is still valid
-        envLevel: { valid: true, hasConfig: false }
+        envLevel: { valid: true, hasConfig: false, target: 'dev' }
       });
       expect(result.environments[0]!.regions).toEqual([
         { region: 'us-west-2', valid: false, reason: 'null_value_at_setting1' }
@@ -324,7 +324,7 @@ describe('list-environments command', () => {
 
       expect(result.environments.find(r => r.environment === 'dev')).toMatchObject({
         available: true,
-        envLevel: { valid: true, hasConfig: true }
+        envLevel: { valid: true, hasConfig: true, target: 'dev' }
       });
       expect(result.environments.find(r => r.environment === 'prod')).toMatchObject({
         available: false,
@@ -348,10 +348,10 @@ describe('list-environments command', () => {
       const result = runListEnvironments(configFile, 'mycomponent') as ComponentEnvironmentsResult;
 
       expect(result.environments.find(r => r.environment === 'dev')).toMatchObject({
-        envLevel: { valid: true, hasConfig: true }
+        envLevel: { valid: true, hasConfig: true, target: 'dev' }
       });
       expect(result.environments.find(r => r.environment === 'prod')).toMatchObject({
-        envLevel: { valid: true, hasConfig: false }
+        envLevel: { valid: true, hasConfig: false, target: 'prod' }
       });
     });
   });
