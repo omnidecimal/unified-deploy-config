@@ -4,8 +4,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import JSON5 from 'json5';
 import { program, Option } from 'commander';
-import { mergeConfig, parseTarget } from './lib/merge-config.js';
-import { checkComponentAvailability } from './lib/component-check.js';
+import { getRegionShortCode, mergeConfig, parseTarget } from './lib/merge-config.js';
+import { checkComponentAvailability, checkAllComponentsAvailability } from './lib/component-discovery.js';
 import type { DeploymentConfig } from './types/index.js';
 
 interface ResolveCommandOptions {
@@ -23,9 +23,9 @@ interface ResolveCommandOptions {
   debug: boolean;
 }
 
-interface WhereCommandOptions {
+interface ListEnvironmentsCommandOptions {
   config: string;
-  component: string;
+  component?: string;
   output: 'json' | 'list';
 }
 
@@ -123,45 +123,81 @@ program
     }
   });
 
-// Where command - find environments where a component is active
+// List environments command - find environments where components have valid configuration
 program
-  .command('where')
-  .description('Find environments where a component has valid configuration (no null values)')
+  .command('list-environments')
+  .alias('le')
+  .description('List environments where components have valid configuration (no null values)')
   .requiredOption('--config <path>', 'Path to the configuration file')
-  .requiredOption('--component <name>', 'Component name to check')
+  .option('--component <name>', 'Component name to check (if omitted, checks all components)')
   .addOption(
     new Option('--output <format>', 'Output format')
       .choices(['json', 'list'])
       .default('json')
   )
-  .action((options: WhereCommandOptions) => {
+  .action((options: ListEnvironmentsCommandOptions) => {
     const configPath = path.resolve(options.config);
     const configContent = fs.readFileSync(configPath, 'utf8');
     const config = JSON5.parse(configContent) as DeploymentConfig;
 
-    const results = checkComponentAvailability(config, options.component);
+    if (options.component) {
+      // Single component check
+      const result = checkComponentAvailability(config, options.component);
 
-    if (results.length === 0 && !(config.accounts || config.environments)) {
-      console.error('No environments or accounts found in config file');
-      process.exit(1);
-    }
+      if (result.environments.length === 0 && !config.environments) {
+        console.error('No environments found in config file');
+        process.exit(1);
+      }
 
-    if (options.output === 'list') {
-      const validEnvs = results.filter(r => r.valid);
-      for (const env of validEnvs) {
-        // Only show bare environment name if env-level is valid
-        if (env.envLevel.valid) {
-          console.log(env.environment);
-        }
-        if (env.regions) {
-          for (const reg of env.regions.filter(r => r.valid)) {
-            // Output as target ID: environment-regionshortcode
-            console.log(`${env.environment}-${reg.regionShort}`);
+      if (options.output === 'list') {
+        for (const env of result.environments.filter(e => e.available)) {
+          // Only show bare environment name if env-level is valid
+          if (env.envLevel.valid) {
+            console.log(env.environment);
+          }
+          if (env.regions) {
+            for (const reg of env.regions.filter(r => r.valid)) {
+              // Output as target ID: environment-regionshortcode
+              const regionShort = getRegionShortCode(reg.region);
+              console.log(`${env.environment}-${regionShort}`);
+            }
           }
         }
+      } else {
+        console.log(JSON.stringify(result, null, 2));
       }
     } else {
-      console.log(JSON.stringify(results, null, 2));
+      // All components check
+      const result = checkAllComponentsAvailability(config);
+
+      if (result.environments.length === 0 && !config.environments) {
+        console.error('No environments found in config file');
+        process.exit(1);
+      }
+
+      if (options.output === 'list') {
+        // Show all valid targets (where ANY component is valid)
+        for (const env of result.environments.filter(e => e.valid)) {
+          // Show environment if any component is valid at env level
+          const anyEnvLevelValid = env.components.some(c => c.envLevel.valid);
+          if (anyEnvLevelValid) {
+            console.log(env.environment);
+          }
+          // Collect all valid regions across all components
+          const validRegions = new Set<string>();
+          for (const comp of env.components) {
+            for (const reg of (comp.regions ?? []).filter(r => r.valid)) {
+              validRegions.add(reg.region);
+            }
+          }
+          for (const region of validRegions) {
+            const regionShort = getRegionShortCode(region);
+            console.log(`${env.environment}-${regionShort}`);
+          }
+        }
+      } else {
+        console.log(JSON.stringify(result, null, 2));
+      }
     }
   });
 

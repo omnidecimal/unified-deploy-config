@@ -237,16 +237,21 @@ describe('mergeConfig function', () => {
 
   test('should allow empty region for environments without regions defined', () => {
     // prod environment has no regions defined, so empty region should work
-    // Note: This test expects to fail on null validation, not on region validation
-    expect(() => {
-      mergeConfig({
-        configFile: DefaultTestConfigFile,
-        env: 'prod',
-        region: '',
-        output: 'flatten',
-        delimiter: '.'
-      });
-    }).toThrow("Configuration contains null value"); // prod fails on null validation, but passes region check
+    // Invalid components (with null values) are filtered out
+    const result = mergeConfig({
+      configFile: DefaultTestConfigFile,
+      env: 'prod',
+      region: '',
+      output: 'flatten',
+      delimiter: '.'
+    }) as FlattenedConfig;
+
+    expect(result.env_name).toBe('prod');
+    // network component is filtered out (has null values)
+    expect(result['network.required_network_val']).toBeUndefined();
+    // tfState and tags components should remain (valid)
+    expect(result['tfState.bucketName']).toBe('tf-state-bucket');
+    expect(result['tags.Project']).toBe('project-name');
   });
 
   test('should ensure no undefined values in dev/usw2 output', () => {
@@ -265,16 +270,21 @@ describe('mergeConfig function', () => {
   });
 
   // Tests for null validation feature
-  test('should throw error for prod environment with null required_network_val', () => {
-    expect(() => {
-      mergeConfig({
-        configFile: DefaultTestConfigFile,
-        env: 'prod',
-        region: '',
-        output: 'flatten',
-        delimiter: '.'
-      });
-    }).toThrow("Configuration contains null value at path: network.required_network_val. All required fields must have concrete values defined in the environment configuration.");
+  test('should filter out components with null values for prod environment', () => {
+    // prod inherits network with null required_network_val, but network should be filtered out
+    const result = mergeConfig({
+      configFile: DefaultTestConfigFile,
+      env: 'prod',
+      region: '',
+      output: 'json',
+    }) as MergedConfig;
+
+    expect(result.env_name).toBe('prod');
+    // network component is filtered out (has null values)
+    expect(result.network).toBeUndefined();
+    // tfState and tags should remain
+    expect(result.tfState).toBeDefined();
+    expect(result.tags).toBeDefined();
   });
 
   test('should not throw error for environments with concrete values', () => {
@@ -299,8 +309,34 @@ describe('mergeConfig function', () => {
     expect(result['network.required_network_val']).toBe('dev-network-value');
   });
 
-  test('should validate null values in nested objects', () => {
-    // Create a config with nested null values
+  test('should throw error when all components have null values', () => {
+    // Create a config where all components have null values
+    const configWithNestedNull: DeploymentConfig = {
+      defaults: {
+        deeply: {
+          nested: {
+            value: null
+          }
+        }
+      },
+      environments: {
+        test: {}
+      }
+    };
+
+    // When no --component specified and all components are invalid, should throw
+    expect(() => {
+      mergeConfig({
+        configFile: configWithNestedNull,
+        env: 'test',
+        region: '',
+        output: 'json'
+      });
+    }).toThrow("No valid components found for target. All components contain null values.");
+  });
+
+  test('should throw error for specific component with null values', () => {
+    // When --component IS specified and has null, should throw with path
     const configWithNestedNull: DeploymentConfig = {
       defaults: {
         deeply: {
@@ -319,9 +355,10 @@ describe('mergeConfig function', () => {
         configFile: configWithNestedNull,
         env: 'test',
         region: '',
-        output: 'json'
+        output: 'json',
+        component: 'deeply'
       });
-    }).toThrow("Configuration contains null value at path: deeply.nested.value. All required fields must have concrete values defined in the environment configuration.");
+    }).toThrow("Configuration contains null value at path: nested.value. All required fields must have concrete values defined in the environment configuration.");
   });
 
   test('should allow null values if overridden by environment', () => {

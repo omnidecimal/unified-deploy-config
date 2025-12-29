@@ -43,10 +43,15 @@ describe('resolve command', () => {
     });
 
     test('should handle --env without --region when env has no regions', () => {
-      // prod has no regions, but will fail on null validation
-      const result = runResolveWithError(`--config ${testConfigPath} --env prod`);
-      expect(result.success).toBe(false);
-      expect(result.stderr).toContain('null value');
+      // prod has no regions and invalid components are filtered out
+      const result = runResolve(`--config ${testConfigPath} --env prod`);
+      const parsed = JSON.parse(result);
+
+      expect(parsed.env_name).toBe('prod');
+      // network is filtered out (has null values), but tfState and tags remain
+      expect(parsed.network).toBeUndefined();
+      expect(parsed.tfState).toBeDefined();
+      expect(parsed.tags).toBeDefined();
     });
 
     test('should require --region when env has regions defined', () => {
@@ -75,10 +80,15 @@ describe('resolve command', () => {
     });
 
     test('should resolve config with --target without region', () => {
-      // prod has no regions, but will fail on null validation
-      const result = runResolveWithError(`--config ${testConfigPath} --target prod`);
-      expect(result.success).toBe(false);
-      expect(result.stderr).toContain('null value');
+      // prod has no regions and invalid components are filtered out
+      const result = runResolve(`--config ${testConfigPath} --target prod`);
+      const parsed = JSON.parse(result);
+
+      expect(parsed.env_name).toBe('prod');
+      // network is filtered out (has null values), but tfState and tags remain
+      expect(parsed.network).toBeUndefined();
+      expect(parsed.tfState).toBeDefined();
+      expect(parsed.tags).toBeDefined();
     });
 
     test('should error when --target env has regions but no region in target', () => {

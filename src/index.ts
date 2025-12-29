@@ -8,7 +8,7 @@ export {
   AwsRegionMapping,
   AwsRegionToShortCode,
 } from './lib/merge-config.js';
-export { checkComponentAvailability, checkComponentValidity } from './lib/component-check.js';
+export { checkComponentAvailability, checkComponentValidity } from './lib/component-discovery.js';
 export { deepMerge, findNullValue } from './lib/utils.js';
 export { flatten } from './flatten.js';
 export * from './types/index.js';

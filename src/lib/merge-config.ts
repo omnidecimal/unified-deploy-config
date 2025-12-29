@@ -114,7 +114,7 @@ export function mergeConfig(options: MergeConfigOptions): MergedConfig | Flatten
     ? JSON5.parse(fs.readFileSync(path.resolve(configFile), 'utf8')) as DeploymentConfig
     : configFile;
 
-  const envSource = config.accounts ?? config.environments;
+  const envSource = config.environments;
 
   // Handle ephemeral environments
   const { envName, envConfigName, isEphemeral } = determineEnvironment();
@@ -246,28 +246,50 @@ export function mergeConfig(options: MergeConfigOptions): MergedConfig | Flatten
     return deepMerge(d, e, r) as Record<string, ConfigValue>;
   }
 
-  const merged: Record<string, ConfigValue> = {
-    ...getGlobalMerged(),
-    ...Object.fromEntries(getAllComponentKeys().map(k => [k, getMergedComponentConfig(k)])),
-  };
+  const allComponentKeys = getAllComponentKeys();
+  let merged: Record<string, ConfigValue>;
+  let finalResult: Record<string, ConfigValue>;
 
-  // Handle component hoisting if specified
-  let finalResult: Record<string, ConfigValue> = merged;
   if (component) {
-    const componentValue = merged[component];
-    // Check if the component exists in the merged config
-    if (componentValue && typeof componentValue === 'object' && !Array.isArray(componentValue)) {
-      // Get non-component properties to preserve
-      const nonComponentProps = getGlobalMerged();
-
-      // Hoist the specified component to root level while preserving non-component metadata
-      finalResult = {
-        ...nonComponentProps,
-        ...(componentValue as Record<string, ConfigValue>),
-      };
-    } else {
+    // Specific component requested - verify it exists first
+    if (!allComponentKeys.includes(component)) {
       throw new Error(`Component '${component}' not found or is not a valid component in the merged configuration`);
     }
+
+    const componentConfig = getMergedComponentConfig(component);
+    merged = {
+      ...getGlobalMerged(),
+      [component]: componentConfig,
+    };
+
+    // Get non-component properties to preserve
+    const nonComponentProps = getGlobalMerged();
+
+    // Hoist the specified component to root level while preserving non-component metadata
+    finalResult = {
+      ...nonComponentProps,
+      ...(componentConfig as Record<string, ConfigValue>),
+    };
+  } else {
+    // No specific component - filter out invalid components (those with null values)
+    const validComponents: [string, ComponentConfig][] = [];
+    for (const key of allComponentKeys) {
+      const compConfig = getMergedComponentConfig(key);
+      if (!hasNullValues(compConfig)) {
+        validComponents.push([key, compConfig]);
+      }
+    }
+
+    // Throw error if all components are invalid
+    if (validComponents.length === 0 && allComponentKeys.length > 0) {
+      throw new Error(`No valid components found for target. All components contain null values.`);
+    }
+
+    merged = {
+      ...getGlobalMerged(),
+      ...Object.fromEntries(validComponents),
+    };
+    finalResult = merged;
   }
 
   // Add common dynamic metadata to the merged result (environment, region, etc)
@@ -298,6 +320,16 @@ function validateNoNullValues(obj: Record<string, ConfigValue>, path: string = '
       validateNoNullValues(value as Record<string, ConfigValue>, currentPath);
     }
   }
+}
+
+function hasNullValues(obj: Record<string, ConfigValue>): boolean {
+  for (const value of Object.values(obj)) {
+    if (value === null) return true;
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      if (hasNullValues(value as Record<string, ConfigValue>)) return true;
+    }
+  }
+  return false;
 }
 
 function flatten(obj: Record<string, ConfigValue>, prefix: string = '', delimiter: string = '.'): FlattenedConfig {
