@@ -40,7 +40,7 @@ program
 
 // Parse command - merge configurations for different environments and regions
 program
-  .command('resolve', { isDefault: true })
+  .command('resolve')
   .description('Show resolved active configuration for a specified environment and region')
   .requiredOption('--config <path>', 'Path to the configuration file')
   .option('--target <deployment-id>', 'Target Deployment ID in format: environment[-region] (e.g., dev-usw2)')
@@ -228,3 +228,7 @@ program
   });
 
 program.parse(process.argv);
+
+if (!process.argv.slice(2).length) {
+  program.help();
+}
