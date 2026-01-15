@@ -29,6 +29,8 @@ export interface EnvLevelAvailability {
   available: boolean; // Whether the component is available (anywhere) in the environment
   envLevel: ComponentValidity;
   regions?: RegionalComponentValidity[];
+  /** True if the component is marked as region-agnostic */
+  regionAgnostic?: boolean;
 }
 
 export interface EnvironmentEnvLevelAvailability extends EnvLevelAvailability {

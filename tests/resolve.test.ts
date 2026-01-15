@@ -245,4 +245,163 @@ describe('resolve command', () => {
       expect(result.stderr).toContain('not a valid region');
     });
   });
+
+  describe('region-agnostic metadata stripping', () => {
+    test('should strip _regionAgnostic from resolved config', () => {
+      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'resolve-test-'));
+      const tempConfig = path.join(tempDir, 'config.json5');
+      fs.writeFileSync(tempConfig, JSON.stringify({
+        defaults: {
+          mycomponent: {
+            _regionAgnostic: true,
+            _someOtherMetadata: 'meta-value',
+            setting1: 'default-value'
+          }
+        },
+        environments: {
+          dev: {}
+        }
+      }));
+
+      try {
+        const result = runResolve(`--config ${tempConfig} --target dev`);
+        const parsed = JSON.parse(result);
+
+        // _regionAgnostic and other metadata keys should be stripped from output
+        expect(parsed.mycomponent._regionAgnostic).toBeUndefined();
+        expect(parsed.mycomponent._someOtherMetadata).toBeUndefined();
+        expect(parsed.mycomponent.setting1).toBe('default-value');
+      } finally {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+
+    test('should strip _regionAgnostic when using --component', () => {
+      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'resolve-test-'));
+      const tempConfig = path.join(tempDir, 'config.json5');
+      fs.writeFileSync(tempConfig, JSON.stringify({
+        defaults: {
+          mycomponent: {
+            _regionAgnostic: true,
+            setting1: 'default-value'
+          }
+        },
+        environments: {
+          dev: {}
+        }
+      }));
+
+      try {
+        const result = runResolve(`--config ${tempConfig} --target dev --component mycomponent`);
+        const parsed = JSON.parse(result);
+
+        // _regionAgnostic should be stripped from hoisted component
+        expect(parsed._regionAgnostic).toBeUndefined();
+        expect(parsed.setting1).toBe('default-value');
+      } finally {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+
+    test('resolve should work with region target for region-agnostic component (backward compat)', () => {
+      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'resolve-test-'));
+      const tempConfig = path.join(tempDir, 'config.json5');
+      fs.writeFileSync(tempConfig, JSON.stringify({
+        defaults: {
+          mycomponent: {
+            _regionAgnostic: true,
+            setting1: 'default-value'
+          }
+        },
+        environments: {
+          dev: {
+            regions: {
+              'us-west-2': {}
+            }
+          }
+        }
+      }));
+
+      try {
+        // Even though mycomponent is region-agnostic, resolve should still work with region target
+        const result = runResolve(`--config ${tempConfig} --target dev-usw2 --component mycomponent`);
+        const parsed = JSON.parse(result);
+
+        expect(parsed.setting1).toBe('default-value');
+        expect(parsed.env_name).toBe('dev');
+        expect(parsed.region).toBe('us-west-2');
+      } finally {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+
+    test('resolve should allow env-only target for region-agnostic component even if env has regions', () => {
+      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'resolve-test-'));
+      const tempConfig = path.join(tempDir, 'config.json5');
+      fs.writeFileSync(tempConfig, JSON.stringify({
+        defaults: {
+          regionAgnosticComp: {
+            _regionAgnostic: true,
+            setting1: 'default-value'
+          },
+          normalComp: {
+            setting2: 'other-value'
+          }
+        },
+        environments: {
+          dev: {
+            regions: {
+              'us-west-2': {
+                normalComp: { setting2: 'region-value' }
+              }
+            }
+          }
+        }
+      }));
+
+      try {
+        // Region-agnostic component should resolve without region
+        const result = runResolve(`--config ${tempConfig} --target dev --component regionAgnosticComp`);
+        const parsed = JSON.parse(result);
+
+        expect(parsed.setting1).toBe('default-value');
+        expect(parsed.env_name).toBe('dev');
+        expect(parsed.region).toBe('');  // No region for region-agnostic
+      } finally {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+
+    test('resolve should still require region for non-region-agnostic component when env has regions', () => {
+      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'resolve-test-'));
+      const tempConfig = path.join(tempDir, 'config.json5');
+      fs.writeFileSync(tempConfig, JSON.stringify({
+        defaults: {
+          regionAgnosticComp: {
+            _regionAgnostic: true,
+            setting1: 'default-value'
+          },
+          normalComp: {
+            setting2: 'other-value'
+          }
+        },
+        environments: {
+          dev: {
+            regions: {
+              'us-west-2': {}
+            }
+          }
+        }
+      }));
+
+      try {
+        // Non-region-agnostic component should still require region
+        const result = runResolveWithError(`--config ${tempConfig} --target dev --component normalComp`);
+        expect(result.success).toBe(false);
+        expect(result.stderr).toContain('has regions defined');
+      } finally {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+  });
 });

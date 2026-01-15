@@ -12,7 +12,75 @@ import type {
   ComponentEnvLevelAvailability,
   RegionalComponentValidity,
   ConfigValue,
+  EnvLevelAvailability,
 } from '../types/index.js';
+
+/**
+ * Check if a component is marked as region-agnostic.
+ * A region-agnostic component only shows env-level targets in list-environments output.
+ * The _regionAgnostic flag is checked at defaults and env level (not region level).
+ */
+function isComponentRegionAgnostic(
+  config: DeploymentConfig,
+  envSource: Record<string, EnvironmentConfig>,
+  envName: string,
+  componentName: string
+): boolean {
+  const defaults = config.defaults ?? {};
+  const envConfig = envSource[envName] ?? {};
+
+  const defaultComp = defaults[componentName] as ComponentConfig | undefined;
+  const envComp = envConfig[componentName] as ComponentConfig | undefined;
+
+  // Merge defaults and env level to check _regionAgnostic
+  // (env level can override defaults)
+  const merged = deepMerge(defaultComp ?? {}, envComp ?? {});
+  return merged._regionAgnostic === true;
+}
+
+/**
+ * Get availability info for a single component in a single environment.
+ * This is the core logic shared by checkComponentAvailability and checkAllComponentsAvailability.
+ */
+function getComponentEnvAvailability(
+  config: DeploymentConfig,
+  envSource: Record<string, EnvironmentConfig>,
+  envName: string,
+  regions: string[],
+  componentName: string
+): EnvLevelAvailability {
+  // Check if this component is region-agnostic for this environment
+  const regionAgnostic = isComponentRegionAgnostic(config, envSource, envName, componentName);
+
+  // Check environment level (no region)
+  const envResult = checkComponentValidity(config, envSource, envName, null, componentName);
+
+  // Check each region (only if not region-agnostic)
+  const regionResults: RegionalComponentValidity[] = [];
+  if (!regionAgnostic) {
+    for (const region of regions) {
+      const regionResult = checkComponentValidity(config, envSource, envName, region, componentName);
+      if (regionResult.valid) {
+        const regionShort = getRegionShortCode(region);
+        regionResults.push({ region, valid: true, hasConfig: regionResult.hasConfig, target: `${envName}-${regionShort}` });
+      } else {
+        regionResults.push({ region, valid: false, reason: regionResult.reason });
+      }
+    }
+  }
+
+  // Environment is available if env-level is valid OR any region is valid
+  const anyRegionValid = regionResults.some(r => r.valid);
+
+  return {
+    available: envResult.valid || anyRegionValid,
+    envLevel: envResult.valid
+      ? { valid: true, hasConfig: envResult.hasConfig, target: envName }
+      : { valid: false, reason: envResult.reason },
+    regions: regionResults.length > 0 ? regionResults : undefined,
+    regionAgnostic: regionAgnostic || undefined
+  };
+}
 
 /**
  * Check where a component has valid configuration across environments and regions.
@@ -29,32 +97,11 @@ export function checkComponentAvailability(
       const envConfig = envSource[envName];
       const regions = envConfig?.regions ? Object.keys(envConfig.regions) : [];
 
-      // Check environment level (no region)
-      const envResult = checkComponentValidity(config, envSource, envName, null, componentName);
-
-      // Check each region
-      const regionResults: RegionalComponentValidity[] = [];
-      for (const region of regions) {
-        const regionResult = checkComponentValidity(config, envSource, envName, region, componentName);
-        if (regionResult.valid) {
-          const regionShort = getRegionShortCode(region);
-          regionResults.push({ region, valid: true, hasConfig: regionResult.hasConfig, target: `${envName}-${regionShort}` });
-        } else {
-          regionResults.push({ region, valid: false, reason: regionResult.reason });
-        }
-      }
-
-      // Environment is available if env-level is valid OR any region is valid
-      const anyRegionValid = regionResults.some(r => r.valid);
-      const isAvailable = envResult.valid || anyRegionValid;
+      const availability = getComponentEnvAvailability(config, envSource, envName, regions, componentName);
 
       environments.push({
         environment: envName,
-        available: isAvailable,
-        envLevel: envResult.valid
-          ? { valid: true, hasConfig: envResult.hasConfig, target: envName }
-          : { valid: false, reason: envResult.reason },
-        regions: regionResults.length > 0 ? regionResults : undefined
+        ...availability
       });
     }
   }
@@ -179,29 +226,11 @@ export function checkAllComponentsAvailability(
     const components: ComponentEnvLevelAvailability[] = [];
 
     for (const componentName of componentNames) {
-      const envResult = checkComponentValidity(config, envSource, envName, null, componentName);
-
-      // Check each region for this component
-      const regionResults: RegionalComponentValidity[] = [];
-      for (const region of regions) {
-        const regionResult = checkComponentValidity(config, envSource, envName, region, componentName);
-        if (regionResult.valid) {
-          const regionShort = getRegionShortCode(region);
-          regionResults.push({ region, valid: true, hasConfig: regionResult.hasConfig, target: `${envName}-${regionShort}` });
-        } else {
-          regionResults.push({ region, valid: false, reason: regionResult.reason });
-        }
-      }
-
-      const anyRegionValid = regionResults.some(r => r.valid);
+      const availability = getComponentEnvAvailability(config, envSource, envName, regions, componentName);
 
       components.push({
         component: componentName,
-        available: envResult.valid || anyRegionValid,
-        envLevel: envResult.valid
-          ? { valid: true, hasConfig: envResult.hasConfig, target: envName }
-          : { valid: false, reason: envResult.reason },
-        regions: regionResults.length > 0 ? regionResults : undefined
+        ...availability
       });
     }
 

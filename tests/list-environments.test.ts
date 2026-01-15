@@ -466,4 +466,180 @@ describe('list-environments command', () => {
     });
   });
 
+  describe('region-agnostic components', () => {
+    test('should only show env-level targets for region-agnostic component', () => {
+      const configFile = createConfig({
+        defaults: {
+          mycomponent: {
+            _regionAgnostic: true,
+            setting1: 'default'
+          }
+        },
+        environments: {
+          dev: {
+            regions: {
+              'us-west-2': {},
+              'us-east-1': {}
+            }
+          }
+        }
+      });
+
+      const result = runListEnvironments(configFile, 'mycomponent') as ComponentEnvironmentsResult;
+
+      expect(result.environments).toHaveLength(1);
+      expect(result.environments[0]).toMatchObject({
+        environment: 'dev',
+        available: true,
+        envLevel: { valid: true, hasConfig: false, target: 'dev' },
+        regionAgnostic: true
+      });
+      // No regions should be present for region-agnostic components
+      expect(result.environments[0]!.regions).toBeUndefined();
+    });
+
+    test('should still show regions for non-region-agnostic component', () => {
+      const configFile = createConfig({
+        defaults: {
+          mycomponent: { setting1: 'default' }  // no _regionAgnostic
+        },
+        environments: {
+          dev: {
+            regions: {
+              'us-west-2': {}
+            }
+          }
+        }
+      });
+
+      const result = runListEnvironments(configFile, 'mycomponent') as ComponentEnvironmentsResult;
+
+      expect(result.environments[0]).toMatchObject({
+        environment: 'dev',
+        available: true
+      });
+      expect(result.environments[0]!.regions).toEqual([
+        { region: 'us-west-2', valid: true, hasConfig: false, target: 'dev-usw2' }
+      ]);
+      expect(result.environments[0]!.regionAgnostic).toBeUndefined();
+    });
+
+    test('region-agnostic in list output should only show env-level targets', () => {
+      const configFile = createConfig({
+        defaults: {
+          mycomponent: {
+            _regionAgnostic: true,
+            setting1: 'default'
+          }
+        },
+        environments: {
+          dev: {
+            regions: {
+              'us-west-2': {},
+              'us-east-1': {}
+            }
+          },
+          prod: {}
+        }
+      });
+
+      const result = runListEnvironments(configFile, 'mycomponent', 'list') as string[];
+
+      expect(result).toContain('dev');
+      expect(result).toContain('prod');
+      // No region targets should appear
+      expect(result).not.toContain('dev-usw2');
+      expect(result).not.toContain('dev-use1');
+    });
+
+    test('env-level _regionAgnostic: false should override defaults', () => {
+      const configFile = createConfig({
+        defaults: {
+          mycomponent: {
+            _regionAgnostic: true,
+            setting1: 'default'
+          }
+        },
+        environments: {
+          dev: {
+            mycomponent: { _regionAgnostic: false },  // override
+            regions: {
+              'us-west-2': {}
+            }
+          }
+        }
+      });
+
+      const result = runListEnvironments(configFile, 'mycomponent') as ComponentEnvironmentsResult;
+
+      expect(result.environments[0]).toMatchObject({
+        environment: 'dev',
+        available: true
+      });
+      // Since env overrides to false, regions should appear
+      expect(result.environments[0]!.regions).toEqual([
+        { region: 'us-west-2', valid: true, hasConfig: false, target: 'dev-usw2' }
+      ]);
+      expect(result.environments[0]!.regionAgnostic).toBeUndefined();
+    });
+
+    test('region-agnostic env invalid should still mark environment unavailable', () => {
+      const configFile = createConfig({
+        defaults: {
+          mycomponent: {
+            _regionAgnostic: true,
+            setting1: null  // makes it invalid
+          }
+        },
+        environments: {
+          dev: {
+            regions: {
+              'us-west-2': {}  // normally would be checked but skipped for region-agnostic
+            }
+          }
+        }
+      });
+
+      const result = runListEnvironments(configFile, 'mycomponent') as ComponentEnvironmentsResult;
+
+      expect(result.environments[0]).toMatchObject({
+        environment: 'dev',
+        available: false,  // env-level is invalid
+        envLevel: { valid: false, reason: 'null_value_at_setting1' },
+        regionAgnostic: true
+      });
+    });
+
+    test('all-components output should include regionAgnostic flag per component', () => {
+      const configFile = createConfig({
+        defaults: {
+          componentA: {
+            _regionAgnostic: true,
+            setting1: 'default'
+          },
+          componentB: { setting1: 'default' }  // not region-agnostic
+        },
+        environments: {
+          dev: {
+            regions: {
+              'us-west-2': {}
+            }
+          }
+        }
+      });
+
+      const result = runListEnvironments(configFile) as EnvironmentsResult;
+
+      const devResult = result.environments.find(r => r.environment === 'dev');
+      const compA = devResult?.components.find(c => c.component === 'componentA');
+      const compB = devResult?.components.find(c => c.component === 'componentB');
+
+      expect(compA?.regionAgnostic).toBe(true);
+      expect(compA?.regions).toBeUndefined();  // no regions for region-agnostic
+
+      expect(compB?.regionAgnostic).toBeUndefined();
+      expect(compB?.regions).toBeDefined();  // has regions for normal component
+    });
+  });
+
 });

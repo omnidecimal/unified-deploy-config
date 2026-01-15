@@ -15,6 +15,26 @@ import type {
   ConfigValue,
 } from '../types/index.js';
 
+/**
+ * Strip metadata keys (those starting with underscore) from a config object.
+ * These are configuration behavior flags, not actual config values.
+ */
+function stripMetadataKeys(obj: Record<string, ConfigValue>): Record<string, ConfigValue> {
+  const result: Record<string, ConfigValue> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    // Skip metadata keys (those starting with underscore)
+    if (key.startsWith('_')) continue;
+
+    // Recursively strip from nested objects
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      result[key] = stripMetadataKeys(value as Record<string, ConfigValue>);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 // Region mapping: short code -> full name
 export const AwsRegionMapping: Record<RegionShortCode, RegionFullName> = {
   'use1': 'us-east-1',
@@ -135,9 +155,19 @@ export function mergeConfig(options: MergeConfigOptions): MergedConfig | Flatten
     throw new Error(`Region '${region}' is not a valid region code or name`);
   }
 
+  // Helper to check if a component is region-agnostic (merges defaults + env level)
+  function isComponentRegionAgnostic(componentName: string): boolean {
+    const defaultComp = config.defaults?.[componentName] as ComponentConfig | undefined;
+    const envComp = envSource?.[envConfigName]?.[componentName] as ComponentConfig | undefined;
+    const merged = deepMerge(defaultComp ?? {}, envComp ?? {});
+    return merged._regionAgnostic === true;
+  }
+
   // Validate that region is provided if the environment has regions defined
+  // Exception: if a specific component is requested and it's region-agnostic, skip this check
   const envRegions = envSource[envConfigName]?.regions;
-  if (envRegions && Object.keys(envRegions).length > 0 && !region) {
+  const componentIsRegionAgnostic = component ? isComponentRegionAgnostic(component) : false;
+  if (envRegions && Object.keys(envRegions).length > 0 && !region && !componentIsRegionAgnostic) {
     const availableRegions = Object.keys(envRegions).join(', ');
     throw new Error(`Environment '${envConfigName}' has regions defined. You must specify a region. Available regions: ${availableRegions}`);
   }
@@ -210,7 +240,9 @@ export function mergeConfig(options: MergeConfigOptions): MergedConfig | Flatten
     const regionComp = fullRegion
       ? ((envSource?.[envConfigName]?.regions?.[fullRegion]?.[componentName] as ComponentConfig | undefined) ?? {})
       : {};
-    return deepMerge(defaultComp, envComp, regionComp);
+    const merged = deepMerge(defaultComp, envComp, regionComp);
+    // Strip metadata keys (like _regionAgnostic) from the output
+    return stripMetadataKeys(merged) as ComponentConfig;
   }
 
   function getAllComponentKeys(): string[] {
