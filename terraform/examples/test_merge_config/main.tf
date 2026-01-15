@@ -1,9 +1,8 @@
 module "merge_config" {
   source      = "../../merge_config"
   config_json = "../../../test-cfg.json5"
-  env         = "dev"
-  region      = "usw2"  # Use correct short region code
-  debug       = true  # Set to true to see the merged config in console output
+  target      = "dev-usw2"  # Can also use separate env/region variables
+  debug       = true        # Set to true to see the merged config in console output
 }
 
 locals {

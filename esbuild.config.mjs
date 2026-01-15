@@ -11,8 +11,8 @@ const commonOptions = {
 // Parse command line arguments to allow individual builds
 const args = process.argv.slice(2);
 const buildGha = args.includes('--gha') || args.length === 0;
-const buildTerraform = args.includes('--terraform') || args.length === 0;
-const buildPackage = args.includes('--package') || args.length === 0;
+const buildCli = args.includes('--cli') || args.length === 0;
+const buildCjsLib = args.includes('--cjslib') || args.length === 0;
 
 const builds = [];
 
@@ -28,24 +28,24 @@ if (buildGha) {
   );
 }
 
-// Terraform bundle
-if (buildTerraform) {
+// CLI bundle - used by Terraform module and can be run directly with node
+if (buildCli) {
   builds.push(
     esbuild.build({
       ...commonOptions,
-      entryPoints: ['src/lib/merge-config.ts'],
-      outfile: 'dist/terraform/index.cjs',
+      entryPoints: ['src/cli.ts'],
+      outfile: 'dist/cli/index.cjs',
       format: 'cjs',
-    }).then(() => console.log('Built: dist/terraform/index.cjs'))
+    }).then(() => console.log('Built: dist/cli/index.cjs'))
   );
 }
 
-// Package distribution bundle (CJS for require() consumers)
-if (buildPackage) {
+// Library CJS bundle - for require() consumers
+if (buildCjsLib) {
   builds.push(
     esbuild.build({
       ...commonOptions,
-      entryPoints: ['src/lib/merge-config.ts'],
+      entryPoints: ['src/index.ts'],
       outfile: 'dist/cjs/index.cjs',
       format: 'cjs',
     }).then(() => console.log('Built: dist/cjs/index.cjs'))

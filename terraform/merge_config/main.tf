@@ -1,14 +1,21 @@
-data "external" "merged_config" {
-  program = concat([
-    "env", "TF_DEBUG_DIR=${path.cwd}",
+locals {
+  # Build the program arguments based on whether target or env/region is provided
+  use_target = var.target != ""
+
+  base_args = [
     "node",
-    "${path.module}/../../dist/terraform/index.cjs",
+    "${path.module}/../../dist/cli/index.cjs",
+    "resolve",
     "--config", var.config_json,
-    "--env", var.env,
-    "--region", var.region,
-    "--output", "json",
-    "--terraform"
-  ], var.debug ? ["--debug"] : [])
+    "--terraform",
+  ]
+
+  target_args = local.use_target ? ["--target", var.target] : ["--env", var.env, "--region", var.region]
+  debug_args  = var.debug ? ["--debug"] : []
+}
+
+data "external" "merged_config" {
+  program = concat(local.base_args, local.target_args, local.debug_args)
 }
 
 locals {

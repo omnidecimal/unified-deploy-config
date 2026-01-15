@@ -375,8 +375,8 @@ as part of the build/release process.
 For local testing you can generate them with:
 
 - Action bundle: `pnpm run build:gha` → `dist/action/index.cjs`
-- Terraform bundle: `pnpm run build:terraform` → `dist/terraform/index.cjs`
-- CJS bundle (for `require()` consumers): `pnpm run build:package` → `dist/cjs/index.cjs`
+- CLI bundle (used by the Terraform module): `pnpm run build:terraform` → `dist/cli/index.cjs`
+- CJS bundle (for `require()` consumers): `pnpm run build:cjslib` → `dist/cjs/index.cjs`
 
 
 

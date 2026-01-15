@@ -16,8 +16,7 @@
     "udc": "./dist/esm/cli.js"
   },
   "files": [
-    "dist/",
-    "src/"
+    "dist/"
   ],
   "keywords": [
     "config",
@@ -37,8 +36,8 @@
     "build": "tsc && pnpm run build:bundles",
     "build:bundles": "node esbuild.config.mjs",
     "build:gha": "node esbuild.config.mjs --gha",
-    "build:terraform": "node esbuild.config.mjs --terraform",
-    "build:package": "node esbuild.config.mjs --package",
+    "build:cli": "node esbuild.config.mjs --cli",
+    "build:cjslib": "node esbuild.config.mjs --cjslib",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
