@@ -54,11 +54,12 @@ describe('resolve command', () => {
       expect(parsed.tags).toBeDefined();
     });
 
-    test('should require --region when env has regions defined', () => {
+    test('should filter out non-region-agnostic components when env has regions but no region specified', () => {
+      // With no region specified for an env with regions, non-region-agnostic components are filtered out.
+      // Since test config has no region-agnostic components, this results in no valid components.
       const result = runResolveWithError(`--config ${testConfigPath} --env dev`);
       expect(result.success).toBe(false);
-      expect(result.stderr).toContain('has regions defined');
-      expect(result.stderr).toContain('us-west-2');
+      expect(result.stderr).toContain('No valid components found for target');
     });
 
     test('should error when neither --target nor --env is specified', () => {
@@ -91,10 +92,12 @@ describe('resolve command', () => {
       expect(parsed.tags).toBeDefined();
     });
 
-    test('should error when --target env has regions but no region in target', () => {
+    test('should filter out non-region-agnostic components when --target env has regions but no region in target', () => {
+      // With no region in target for an env with regions, non-region-agnostic components are filtered out.
+      // Since test config has no region-agnostic components, this results in no valid components.
       const result = runResolveWithError(`--config ${testConfigPath} --target dev`);
       expect(result.success).toBe(false);
-      expect(result.stderr).toContain('has regions defined');
+      expect(result.stderr).toContain('No valid components found for target');
     });
 
     test('should error when --target is used with --env', () => {
