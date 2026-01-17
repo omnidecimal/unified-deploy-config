@@ -163,11 +163,11 @@ export function mergeConfig(options: MergeConfigOptions): MergedConfig | Flatten
     return merged._regionAgnostic === true;
   }
 
-  // Validate that region is provided if the environment has regions defined
-  // Exception: if a specific component is requested and it's region-agnostic, skip this check
+  // Validate that region is provided if a specific component is requested that requires a region
+  // If no specific component is requested, we'll filter out non-region-agnostic components later
   const envRegions = envSource[envConfigName]?.regions;
-  const componentIsRegionAgnostic = component ? isComponentRegionAgnostic(component) : false;
-  if (envRegions && Object.keys(envRegions).length > 0 && !region && !componentIsRegionAgnostic) {
+  const envHasRegions = envRegions && Object.keys(envRegions).length > 0;
+  if (component && envHasRegions && !region && !isComponentRegionAgnostic(component)) {
     const availableRegions = Object.keys(envRegions).join(', ');
     throw new Error(`Environment '${envConfigName}' has regions defined. You must specify a region. Available regions: ${availableRegions}`);
   }
@@ -303,9 +303,15 @@ export function mergeConfig(options: MergeConfigOptions): MergedConfig | Flatten
       ...(componentConfig as Record<string, ConfigValue>),
     };
   } else {
-    // No specific component - filter out invalid components (those with null values)
+    // No specific component - filter out invalid components:
+    // 1. Those with null values
+    // 2. Non-region-agnostic components when no region is provided and env has regions
     const validComponents: [string, ComponentConfig][] = [];
     for (const key of allComponentKeys) {
+      // Skip non-region-agnostic components when no region is provided for an env with regions
+      if (envHasRegions && !region && !isComponentRegionAgnostic(key)) {
+        continue;
+      }
       const compConfig = getMergedComponentConfig(key);
       if (!hasNullValues(compConfig)) {
         validComponents.push([key, compConfig]);

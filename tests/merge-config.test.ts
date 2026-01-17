@@ -169,7 +169,9 @@ describe('mergeConfig function', () => {
     }).toThrow();
   });
 
-  test('should throw error when environment has regions but no region is specified', () => {
+  test('should filter out non-region-agnostic components when environment has regions but no region is specified', () => {
+    // When no region is specified for an environment with regions,
+    // non-region-agnostic components are filtered out. If no components remain, an error is thrown.
     expect(() => {
       mergeConfig({
         configFile: DefaultTestConfigFile,
@@ -178,7 +180,45 @@ describe('mergeConfig function', () => {
         output: 'flatten',
         delimiter: '.'
       });
-    }).toThrow("Environment 'dev' has regions defined. You must specify a region. Available regions: us-west-2");
+    }).toThrow("No valid components found for target");
+  });
+
+  test('should return only region-agnostic components when environment has regions but no region is specified', () => {
+    // Create a config with a mix of region-agnostic and non-region-agnostic components
+    const configWithRegionAgnostic = {
+      defaults: {
+        regionAgnosticComp: {
+          _regionAgnostic: true,
+          setting1: 'default-value'
+        },
+        normalComp: {
+          setting2: 'other-value'
+        }
+      },
+      environments: {
+        dev: {
+          regions: {
+            'us-west-2': {
+              normalComp: { setting2: 'region-value' }
+            }
+          }
+        }
+      }
+    };
+
+    const result = mergeConfig({
+      configFile: configWithRegionAgnostic,
+      env: 'dev',
+      region: '',  // No region specified
+      output: 'json',
+    }) as Record<string, unknown>;
+
+    // Should only include region-agnostic component
+    expect(result.regionAgnosticComp).toBeDefined();
+    expect((result.regionAgnosticComp as Record<string, unknown>).setting1).toBe('default-value');
+
+    // Should NOT include non-region-agnostic component
+    expect(result.normalComp).toBeUndefined();
   });
 
   test('should support short region codes and convert to full names', () => {
