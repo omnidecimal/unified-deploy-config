@@ -32,6 +32,10 @@ inputs:
   component:
     description: 'Specific component that should be returned from the config (default: all components)'
     required: false
+  hoist:
+    description: 'Hoist component to root level (default: true when component specified)'
+    required: false
+    default: 'true'
   github-token:
     description: 'GitHub token to use for authentication with private repositories'
     required: false

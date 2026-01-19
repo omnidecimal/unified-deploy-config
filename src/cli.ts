@@ -20,6 +20,7 @@ interface ResolveCommandOptions {
   disableEphemeralBranchCheck: boolean;
   branchName?: string;
   component?: string;
+  hoist: boolean;
   debug: boolean;
 }
 
@@ -56,7 +57,9 @@ program
   .option('--ephemeral-branch-prefix <prefix>', 'Prefix for ephemeral branch names')
   .option('--disable-ephemeral-branch-check', 'Disable ephemeral branch validation', false)
   .option('--branch-name <name>', 'Branch name for ephemeral environments')
-  .option('--component <component>', 'Component to hoist to root level')
+  .option('--component <component>', 'Component name to resolve (if omitted, resolves all components)')
+  .option('--hoist', 'Hoist component to root (default: true)', true)
+  .option('--no-hoist', 'Include all components without hoisting')
   .option('--debug', 'Enable debug mode', false)
   .action((options: ResolveCommandOptions) => {
     // Validate mutually exclusive options
@@ -90,7 +93,8 @@ program
       ephemeralBranchPrefix: options.ephemeralBranchPrefix,
       disableEphemeralBranchCheck: options.disableEphemeralBranchCheck,
       branchName: options.branchName,
-      component: options.component
+      component: options.component,
+      hoist: options.hoist
     });
 
     if (options.terraform) {

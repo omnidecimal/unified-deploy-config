@@ -78,6 +78,7 @@ try {
   const disableEphemeralBranchCheck = core.getInput('disable-ephemeral-branch-check') === 'true';
   const displayOutputs = core.getInput('display-outputs') === 'true';
   const component = core.getInput('component') || null;
+  const hoist = core.getInput('hoist') !== 'false';
 
   // Determine env and region from target or individual inputs
   let env: string;
@@ -105,7 +106,8 @@ try {
     ephemeralBranchPrefix,
     disableEphemeralBranchCheck,
     branchName: process.env.GITHUB_REF_NAME,
-    component
+    component,
+    hoist
   }) as FlattenedConfig;
 
   if (displayOutputs) {

@@ -10,7 +10,6 @@ import type {
   FlattenedConfig,
   ParsedTarget,
   DeploymentConfig,
-  EnvironmentConfig,
   ComponentConfig,
   ConfigValue,
 } from '../types/index.js';
@@ -127,8 +126,12 @@ export function mergeConfig(options: MergeConfigOptions): MergedConfig | Flatten
     ephemeralBranchPrefix,
     disableEphemeralBranchCheck,
     branchName,
-    component
+    component,
+    hoist
   } = options;
+
+  // Determine if hoisting should occur: only when component is specified and hoist is not explicitly false
+  const shouldHoist = component ? (hoist !== false) : false;
 
   const config: DeploymentConfig = typeof configFile === 'string'
     ? JSON5.parse(fs.readFileSync(path.resolve(configFile), 'utf8')) as DeploymentConfig
@@ -282,33 +285,29 @@ export function mergeConfig(options: MergeConfigOptions): MergedConfig | Flatten
   let merged: Record<string, ConfigValue>;
   let finalResult: Record<string, ConfigValue>;
 
-  if (component) {
-    // Specific component requested - verify it exists first
-    if (!allComponentKeys.includes(component)) {
-      throw new Error(`Component '${component}' not found or is not a valid component in the merged configuration`);
-    }
+  // If component specified, validate it exists
+  if (component && !allComponentKeys.includes(component)) {
+    throw new Error(`Component '${component}' not found or is not a valid component in the merged configuration`);
+  }
 
+  if (component && shouldHoist) {
+    // Hoist mode: only include the specified component and hoist its properties to root
     const componentConfig = getMergedComponentConfig(component);
     merged = {
       ...getGlobalMerged(),
       [component]: componentConfig,
     };
 
-    // Get non-component properties to preserve
-    const nonComponentProps = getGlobalMerged();
-
     // Hoist the specified component to root level while preserving non-component metadata
     finalResult = {
-      ...nonComponentProps,
+      ...getGlobalMerged(),
       ...(componentConfig as Record<string, ConfigValue>),
     };
   } else {
-    // No specific component - filter out invalid components:
-    // 1. Those with null values
-    // 2. Non-region-agnostic components when no region is provided and env has regions
+    // No component specified, or component specified with hoist=false
+    // Filter out invalid components (null values, non-region-agnostic without region)
     const validComponents: [string, ComponentConfig][] = [];
     for (const key of allComponentKeys) {
-      // Skip non-region-agnostic components when no region is provided for an env with regions
       if (envHasRegions && !region && !isComponentRegionAgnostic(key)) {
         continue;
       }
@@ -318,7 +317,6 @@ export function mergeConfig(options: MergeConfigOptions): MergedConfig | Flatten
       }
     }
 
-    // Throw error if all components are invalid
     if (validComponents.length === 0 && allComponentKeys.length > 0) {
       throw new Error(`No valid components found for target. All components contain null values.`);
     }

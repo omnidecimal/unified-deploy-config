@@ -26,3 +26,15 @@ variable "debug" {
   type        = bool
   default     = false
 }
+
+variable "component" {
+  description = "Specific component to return"
+  type        = string
+  default     = ""
+}
+
+variable "hoist" {
+  description = "Hoist component to root level (default: true)"
+  type        = bool
+  default     = true
+}

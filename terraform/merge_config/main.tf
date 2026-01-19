@@ -10,12 +10,14 @@ locals {
     "--terraform",
   ]
 
-  target_args = local.use_target ? ["--target", var.target] : ["--env", var.env, "--region", var.region]
-  debug_args  = var.debug ? ["--debug"] : []
+  target_args    = local.use_target ? ["--target", var.target] : ["--env", var.env, "--region", var.region]
+  debug_args     = var.debug ? ["--debug"] : []
+  component_args = var.component != "" ? ["--component", var.component] : []
+  hoist_args     = var.component != "" && !var.hoist ? ["--no-hoist"] : []
 }
 
 data "external" "merged_config" {
-  program = concat(local.base_args, local.target_args, local.debug_args)
+  program = concat(local.base_args, local.target_args, local.debug_args, local.component_args, local.hoist_args)
 }
 
 locals {

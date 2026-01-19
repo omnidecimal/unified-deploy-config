@@ -22,6 +22,8 @@ export interface MergeConfigOptions {
   branchName?: string | null;
   /** Component to hoist to root level */
   component?: string | null;
+  /** Whether to hoist component to root level (default: true when component specified) */
+  hoist?: boolean;
 }
 
 /**
