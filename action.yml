@@ -4,12 +4,15 @@ inputs:
   config:
     description: 'Path to config JSON'
     required: true
+  target:
+    description: 'Deployment target in format: env[-region] (e.g., "dev" or "dev-usw2"). Use this OR env/region, not both.'
+    required: false
   env:
-    description: 'Environment (e.g. dev, prod)'
-    required: true
+    description: 'Environment (e.g. dev, prod). Ignored if "target" is provided.'
+    required: false
   region:
-    description: 'Region (us-east-1, us-west-2, etc.)'
-    required: true
+    description: 'Region (us-east-1, us-west-2, etc.). Ignored if "target" is provided.'
+    required: false
   ephemeral-branch-prefix:
     description: 'Prefix for branches associated with ephemeral environments (default: ephemeral/ - set to empty string to disable)'
     required: false

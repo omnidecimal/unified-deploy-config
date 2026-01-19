@@ -4,7 +4,7 @@ import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import { join } from 'node:path';
 import JSON5 from 'json5';
-import mergeConfig from '../lib/merge-config.js';
+import mergeConfig, { parseTarget } from '../lib/merge-config.js';
 import type { FlattenedConfig } from '../types/index.js';
 
 // Support --parse <file> for jq-json5 helper
@@ -54,13 +54,29 @@ try {
   }
 
   const configFile = core.getInput('config', { required: true });
-  const env = core.getInput('env', { required: true });
-  const region = core.getInput('region', { required: true });
+  const target = core.getInput('target');
   const delimiter = core.getInput('delimiter') || '.';
   const ephemeralBranchPrefix = core.getInput('ephemeral-branch-prefix');
   const disableEphemeralBranchCheck = core.getInput('disable-ephemeral-branch-check') === 'true';
   const displayOutputs = core.getInput('display-outputs') === 'true';
   const component = core.getInput('component') || null;
+
+  // Determine env and region from target or individual inputs
+  let env: string;
+  let region: string | undefined;
+
+  if (target) {
+    const parsed = parseTarget(target);
+    env = parsed.env;
+    region = parsed.region;
+    core.info(`Using target '${target}' -> env: '${env}', region: '${region ?? '(none)'}'`);
+  } else {
+    env = core.getInput('env');
+    region = core.getInput('region') || undefined;
+    if (!env) {
+      throw new Error("Either 'target' or 'env' input is required");
+    }
+  }
 
   const flat = mergeConfig({
     configFile,
