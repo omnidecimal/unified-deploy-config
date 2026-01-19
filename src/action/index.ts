@@ -24,21 +24,33 @@ if (parseIndex !== -1 && parseIndex + 1 < args.length) {
   }
 }
 
-function exposeJqJson5(): void {
+function exposeCliTools(): void {
   const { RUNNER_TEMP, GITHUB_ACTION_PATH } = process.env;
   const tempBin = join(RUNNER_TEMP ?? '/tmp', 'unified-deploy-config-bin');
   fs.mkdirSync(tempBin, { recursive: true });
 
-  const wrapper = join(tempBin, 'jq-json5');
   const actionRoot = GITHUB_ACTION_PATH ?? __dirname;
+
+  // Expose jq-json5 helper
+  const jqJson5Wrapper = join(tempBin, 'jq-json5');
   fs.writeFileSync(
-    wrapper,
+    jqJson5Wrapper,
     `#!/usr/bin/env bash
 set -eo pipefail
 file="$1"; shift
-node "${actionRoot}/index.js" --parse "$file" | jq "$@"`
+node "${actionRoot}/index.cjs" --parse "$file" | jq "$@"`
   );
-  fs.chmodSync(wrapper, 0o755);
+  fs.chmodSync(jqJson5Wrapper, 0o755);
+
+  // Expose udc CLI
+  const udcWrapper = join(tempBin, 'udc');
+  fs.writeFileSync(
+    udcWrapper,
+    `#!/usr/bin/env bash
+exec node "${actionRoot}/../cli/index.cjs" "$@"`
+  );
+  fs.chmodSync(udcWrapper, 0o755);
+
   core.addPath(tempBin);
 }
 
@@ -100,7 +112,10 @@ try {
     core.setOutput(k, v);
   }
 
-  exposeJqJson5();
+  const installCli = core.getInput('install-cli') !== 'false';
+  if (installCli) {
+    exposeCliTools();
+  }
 } catch (error) {
   const err = error as Error;
   core.setFailed(err.message ?? String(error));

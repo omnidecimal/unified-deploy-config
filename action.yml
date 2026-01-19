@@ -35,6 +35,10 @@ inputs:
   github-token:
     description: 'GitHub token to use for authentication with private repositories'
     required: false
+  install-cli:
+    description: 'Install udc CLI and jq-json5 tools to PATH for use in subsequent steps (default true)'
+    required: false
+    default: 'true'
 
 runs:
   using: 'node20'
