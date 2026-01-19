@@ -29,7 +29,13 @@ function exposeCliTools(): void {
   const tempBin = join(RUNNER_TEMP ?? '/tmp', 'unified-deploy-config-bin');
   fs.mkdirSync(tempBin, { recursive: true });
 
-  const actionRoot = GITHUB_ACTION_PATH ?? __dirname;
+  // GITHUB_ACTION_PATH points to action root, __dirname is dist/action at runtime
+  const actionEntrypoint = GITHUB_ACTION_PATH
+    ? join(GITHUB_ACTION_PATH, 'dist', 'action', 'index.cjs')
+    : join(__dirname, 'index.cjs');
+  const cliEntrypoint = GITHUB_ACTION_PATH
+    ? join(GITHUB_ACTION_PATH, 'dist', 'cli', 'index.cjs')
+    : join(__dirname, '..', 'cli', 'index.cjs');
 
   // Expose jq-json5 helper
   const jqJson5Wrapper = join(tempBin, 'jq-json5');
@@ -38,7 +44,7 @@ function exposeCliTools(): void {
     `#!/usr/bin/env bash
 set -eo pipefail
 file="$1"; shift
-node "${actionRoot}/index.cjs" --parse "$file" | jq "$@"`
+node "${actionEntrypoint}" --parse "$file" | jq "$@"`
   );
   fs.chmodSync(jqJson5Wrapper, 0o755);
 
@@ -47,7 +53,7 @@ node "${actionRoot}/index.cjs" --parse "$file" | jq "$@"`
   fs.writeFileSync(
     udcWrapper,
     `#!/usr/bin/env bash
-exec node "${actionRoot}/../cli/index.cjs" "$@"`
+exec node "${cliEntrypoint}" "$@"`
   );
   fs.chmodSync(udcWrapper, 0o755);
 
