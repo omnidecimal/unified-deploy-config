@@ -226,4 +226,17 @@ describe('component functionality', () => {
     // Should not have other components
     expect(result['tfState.bucketName']).toBeUndefined();
   });
+
+  test('hoist: false should throw error when requested component has null values', () => {
+    // prod environment is empty, so network would have null values from defaults
+    expect(() => {
+      mergeConfig({
+        configFile: DefaultTestConfigFile,
+        env: 'prod',
+        output: 'json',
+        component: 'network',
+        hoist: false
+      });
+    }).toThrow(/Component 'network' has incomplete configuration \(contains null values\)/);
+  });
 });

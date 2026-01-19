@@ -307,13 +307,28 @@ export function mergeConfig(options: MergeConfigOptions): MergedConfig | Flatten
     // No component specified, or component specified with hoist=false
     // Filter out invalid components (null values, non-region-agnostic without region)
     const validComponents: [string, ComponentConfig][] = [];
+    const componentsWithNulls = new Set<string>();
     for (const key of allComponentKeys) {
       if (envHasRegions && !region && !isComponentRegionAgnostic(key)) {
         continue;
       }
       const compConfig = getMergedComponentConfig(key);
-      if (!hasNullValues(compConfig)) {
+      if (hasNullValues(compConfig)) {
+        componentsWithNulls.add(key);
+      } else {
         validComponents.push([key, compConfig]);
+      }
+    }
+
+    // If a specific component was requested, validate it's in the valid components list
+    if (component) {
+      const isValid = validComponents.some(([k]) => k === component);
+      if (!isValid) {
+        if (componentsWithNulls.has(component)) {
+          throw new Error(`Component '${component}' has incomplete configuration (contains null values) for target '${envConfigName}${fullRegion ? `-${fullRegion}` : ''}'`);
+        }
+        // Otherwise it was excluded due to region requirements (shouldn't happen since we check earlier, but just in case)
+        throw new Error(`Component '${component}' is not valid for the specified target`);
       }
     }
 
